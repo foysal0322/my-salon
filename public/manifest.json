@@ -1,0 +1,25 @@
+{
+  "name": "আমার সেলুন - AmarSaloon",
+  "short_name": "AmarSaloon",
+  "description": "স্মার্ট সেলুন ও বিউটি পার্লার বুকিং ও লাইভ সিরিয়াল অ্যাপ",
+  "start_url": "/?source=pwa",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF9F6",
+  "theme_color": "#0D9488",
+  "lang": "bn-BD",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

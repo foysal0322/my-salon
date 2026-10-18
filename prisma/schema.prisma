@@ -1,0 +1,211 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CUSTOMER
+  OWNER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum SalonCategory {
+  GENTS
+  LADIES
+  UNISEX
+}
+
+enum SalonStatus {
+  PENDING
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+enum BookingType {
+  LIVE_QUEUE
+  SCHEDULED
+}
+
+enum BookingStatus {
+  WAITING
+  IN_SERVICE
+  COMPLETED
+  SKIPPED
+  CANCELLED
+  NO_SHOW
+}
+
+enum LedgerType {
+  INCOME
+  EXPENSE
+}
+
+enum PaymentMethod {
+  BKASH
+  NAGAD
+  ROCKET
+  BANK
+}
+
+enum SubscriptionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           String          @id @default(uuid())
+  phone        String          @unique
+  name         String?
+  passwordHash String?         // Used for ADMIN role or owner password login fallback
+  role         Role            @default(CUSTOMER)
+  languagePref String          @default("bn")
+  status       UserStatus      @default(ACTIVE)
+  pushTokens   String          @default("[]") // JSON serialized array of tokens
+  saloons      Saloon[]        @relation("OwnerSaloons")
+  bookings     Booking[]
+  favorites    FavoriteSalon[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([phone])
+}
+
+model Saloon {
+  id                  String          @id @default(uuid())
+  ownerId             String
+  owner               User            @relation("OwnerSaloons", fields: [ownerId], references: [id], onDelete: Cascade)
+  slug                String          @unique
+  nameBn              String
+  nameEn              String
+  category            SalonCategory   @default(GENTS)
+  isAc                Boolean         @default(false)
+  address             String
+  phone               String
+  latitude            Float
+  longitude           Float
+  totalChairs         Int             @default(3)
+  busyChairs          Int             @default(0)
+  chairStates         String          @default("[]") // JSON array of { chairNo: 1, isBusy: false }
+  manualQueueCount    Int             @default(0)    // Walk-in customers not on app
+  currentServingToken Int             @default(0)
+  status              SalonStatus     @default(ACTIVE)
+  trialEndsAt         DateTime
+  subscriptionEndsAt  DateTime?
+  coverImage          String?
+  services            SalonService[]
+  bookings            Booking[]
+  favoritedBy         FavoriteSalon[]
+  ledgerEntries       LedgerEntry[]
+  subscriptions       Subscription[]
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  @@index([ownerId])
+  @@index([slug])
+  @@index([status, category, isAc])
+}
+
+model SalonService {
+  id           String   @id @default(uuid())
+  saloonId     String
+  saloon       Saloon   @relation(fields: [saloonId], references: [id], onDelete: Cascade)
+  nameBn       String
+  nameEn       String
+  price        Float
+  durationMins Int      @default(25)
+  details      String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([saloonId, isActive])
+}
+
+model Booking {
+  id            String        @id @default(uuid())
+  saloonId      String
+  saloon        Saloon        @relation(fields: [saloonId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      User?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  guestName     String?
+  guestPhone    String
+  tokenNumber   Int           // Daily sequential number per salon
+  bookingDate   String        // YYYY-MM-DD string for strict date grouping
+  bookingType   BookingType   @default(LIVE_QUEUE)
+  scheduledAt   DateTime?
+  servicesJson  String        // Snapshot of selected services, names & rates (JSON string)
+  totalAmount   Float
+  totalDuration Int           // Sum of service durations in minutes
+  status        BookingStatus @default(WAITING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@unique([saloonId, bookingDate, tokenNumber])
+  @@index([saloonId, bookingDate, status])
+  @@index([guestPhone, status])
+}
+
+model FavoriteSalon {
+  userId    String
+  saloonId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  saloon    Saloon   @relation(fields: [saloonId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, saloonId])
+}
+
+model LedgerEntry {
+  id        String     @id @default(uuid())
+  saloonId  String
+  saloon    Saloon     @relation(fields: [saloonId], references: [id], onDelete: Cascade)
+  type      LedgerType
+  category  String     // e.g., "Service Sale", "Electricity", "Staff Payout", "Cosmetics"
+  amount    Float
+  note      String?
+  entryDate String     // YYYY-MM-DD
+  bookingId String?    @unique
+  createdAt DateTime   @default(now())
+
+  @@index([saloonId, entryDate, type])
+}
+
+model Subscription {
+  id            String             @id @default(uuid())
+  saloonId      String
+  saloon        Saloon             @relation(fields: [saloonId], references: [id], onDelete: Cascade)
+  planType      String             // MONTHLY | YEARLY
+  amount        Float
+  paymentMethod PaymentMethod
+  senderNumber  String?
+  trxId         String?            @unique
+  receiptUrl    String?
+  status        SubscriptionStatus @default(PENDING)
+  adminNote     String?
+  validUntil    DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([saloonId, status])
+}
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
