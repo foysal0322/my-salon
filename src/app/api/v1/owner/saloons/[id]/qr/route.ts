@@ -39,7 +39,7 @@ export async function GET(
       const pngBuffer = await QRCode.toBuffer(qrTargetUrl, {
         errorCorrectionLevel: "H",
         margin: 2,
-        width: 1000,
+        width: 1500,
         color: {
           dark: "#0F172A",
           light: "#FFFFFF",
@@ -55,11 +55,11 @@ export async function GET(
       });
     }
 
-    // Generate high error-correction (Level H) QR code Data URL
+    // Generate high error-correction (Level H) QR code Data URL (1200px for ultra high-res print posters)
     const qrDataUrl = await QRCode.toDataURL(qrTargetUrl, {
       errorCorrectionLevel: "H",
       margin: 2,
-      width: 400,
+      width: 1200,
       color: {
         dark: "#0F172A",
         light: "#FFFFFF",

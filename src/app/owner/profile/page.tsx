@@ -239,14 +239,14 @@ function OwnerProfileContent() {
     c.arc(x, y, r, 0, Math.PI * 2);
     c.fillStyle = "#FDE047"; // Golden Amber
     c.fill();
-    c.lineWidth = 3.5;
+    c.lineWidth = Math.max(3, r * 0.1);
     c.strokeStyle = "#FFFFFF";
     c.stroke();
 
     // Stylized Scissors Icon inside badge
     c.strokeStyle = "#0F172A"; // Dark slate
     c.fillStyle = "#0F172A";
-    c.lineWidth = 4;
+    c.lineWidth = Math.max(3.5, r * 0.11);
     c.lineCap = "round";
 
     // Left blade to right handle
@@ -263,7 +263,7 @@ function OwnerProfileContent() {
 
     // Center screw
     c.beginPath();
-    c.arc(x, y - r * 0.05, 4, 0, Math.PI * 2);
+    c.arc(x, y - r * 0.05, Math.max(3, r * 0.1), 0, Math.PI * 2);
     c.fillStyle = "#FFFFFF";
     c.fill();
 
@@ -290,9 +290,9 @@ function OwnerProfileContent() {
 
     try {
       const canvas = document.createElement("canvas");
-      // Standard print poster size (12" x 18" standard commercial print ratio 2:3) in crisp 1200 x 1800 px
-      const width = 1200;
-      const height = 1800;
+      // Standard 8.5" x 5.5" (Half-Letter portrait: 5.5" W x 8.5" H) in ultra-crisp 300 DPI (1650 x 2550 px)
+      const width = 1650;
+      const height = 2550;
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
@@ -302,34 +302,42 @@ function OwnerProfileContent() {
       ctx.fillStyle = "#0D9488";
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Poster border line with rounded corners (44px radius)
+      // 2. Poster border line with rounded corners (48px radius)
       ctx.beginPath();
-      drawRoundRect(ctx, 40, 40, width - 80, height - 80, 44);
+      drawRoundRect(ctx, 40, 40, width - 80, height - 80, 48);
       ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
-      ctx.lineWidth = 3.5;
+      ctx.lineWidth = 4.5;
       ctx.stroke();
 
       // 3. Top Heading: Large bold heading
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 66px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+      ctx.font = "bold 104px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("অনলাইনে সিরিয়াল দিতে স্ক্যান করুন", width / 2, 135);
+      ctx.fillText("অনলাইনে সিরিয়াল দিতে স্ক্যান করুন", width / 2, 160);
 
       ctx.fillStyle = "#FDE047"; // Golden Amber
-      ctx.font = "bold 30px sans-serif";
-      ctx.fillText("SCAN WITH PHONE CAMERA TO BOOK ONLINE", width / 2, 205);
+      ctx.font = "bold 42px sans-serif";
+      ctx.fillText("SCAN WITH PHONE CAMERA TO BOOK ONLINE", width / 2, 250);
 
-      // 4. Central QR Code Box (Crisp white box with rounded corners for scanning contrast)
-      const qrBoxSize = 580;
+      // Top subtle divider line
+      ctx.beginPath();
+      ctx.moveTo(80, 295);
+      ctx.lineTo(width - 80, 295);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // 4. Central QR Code Box (Significantly enlarged QR code with generous breathing space)
+      const qrBoxSize = 980;
       const qrBoxX = (width - qrBoxSize) / 2;
-      const qrBoxY = 260;
+      const qrBoxY = 365;
 
       ctx.fillStyle = "#FFFFFF";
       ctx.beginPath();
-      drawRoundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 28);
+      drawRoundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 36);
       ctx.fill();
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 3.5;
       ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
       ctx.stroke();
 
@@ -364,95 +372,96 @@ function OwnerProfileContent() {
         qrBoxSize - qrPadding * 2
       );
 
-      // 5. Short URL & Salon ID Highlight (Bigger fonts)
-      const idBadgeWidth = 460;
-      const idBadgeY = qrBoxY + qrBoxSize + 35;
+      // 5. Short URL & Salon ID Highlight (Comfortable space below QR code)
+      const idBadgeWidth = 660;
+      const idBadgeHeight = 90;
+      const idBadgeY = 1410;
       ctx.fillStyle = "#0F172A"; // Dark slate pill
       ctx.beginPath();
-      drawRoundRect(ctx, (width - idBadgeWidth) / 2, idBadgeY, idBadgeWidth, 70, 35);
+      drawRoundRect(ctx, (width - idBadgeWidth) / 2, idBadgeY, idBadgeWidth, idBadgeHeight, 45);
       ctx.fill();
 
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 32px sans-serif";
-      ctx.fillText(`সেলুন কোড / ID: #${salon?.code || "1001"}`, width / 2, idBadgeY + 35);
+      ctx.font = "bold 44px sans-serif";
+      ctx.fillText(lang === "bn" ? `সেলুন কোড / ID: #${salon?.code || "1001"}` : `Salon ID: #${salon?.code || "1001"}`, width / 2, idBadgeY + 45);
 
       // Direct domain link in golden amber: amarsalon.xyz
       ctx.fillStyle = "#FDE047";
-      ctx.font = "bold 44px monospace";
-      ctx.fillText(`amarsalon.xyz/${salon?.code || salon?.slug || ""}`, width / 2, idBadgeY + 120);
+      ctx.font = "bold 64px monospace";
+      ctx.fillText(`amarsalon.xyz/${salon?.code || salon?.slug || ""}`, width / 2, idBadgeY + 140);
 
-      // 6. 3 Steps Box (Increased font size & expanded container)
-      const stepBoxY = idBadgeY + 175;
-      const stepBoxWidth = width - 140;
-      const stepBoxHeight = 360;
+      // 6. 3 Steps Box (Increased font size, placed lower from current position, compact white space)
+      const stepBoxY = 1665;
+      const stepBoxWidth = width - 150;
+      const stepBoxHeight = 440;
       ctx.fillStyle = "#FFFFFF";
       ctx.beginPath();
-      drawRoundRect(ctx, 70, stepBoxY, stepBoxWidth, stepBoxHeight, 28);
+      drawRoundRect(ctx, 75, stepBoxY, stepBoxWidth, stepBoxHeight, 32);
       ctx.fill();
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
       ctx.stroke();
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#0F172A";
-      ctx.font = "bold 34px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
-      ctx.fillText("সহজ ৩ ধাপে সিরিয়াল নেওয়ার নিয়ম:", 120, stepBoxY + 54);
+      ctx.font = "bold 50px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+      ctx.fillText("সহজ ৩ ধাপে সিরিয়াল নেওয়ার নিয়ম:", 135, stepBoxY + 65);
 
       const salonCode = salon?.code || "1001";
       const steps = [
         `১. ফোনের ক্যামেরা দিয়ে QR কোডটি স্ক্যান করুন (বা amarsalon.xyz/${salonCode} এ যান)`,
-        "২. 'প্রিয় সেলুন' (My Saloons)-এ যুক্ত করুন দ্রুত সিরিয়াল পাওয়ার জন্য",
+        "২. 'প্রিয় সেলুন' (My Salons)-এ যুক্ত করুন দ্রুত সিরিয়াল পাওয়ার জন্য",
         "৩. ঘরে বসেই চেয়ার খালি আছে কিনা দেখুন ও সিরিয়াল নিন",
       ];
 
       steps.forEach((st, idx) => {
-        const lineY = stepBoxY + 122 + idx * 75;
-        // Step number circle (larger radius 22px)
+        const lineY = stepBoxY + 155 + idx * 110;
+        // Step number circle (radius 28px)
         ctx.fillStyle = "#0D9488";
         ctx.beginPath();
-        ctx.arc(142, lineY - 10, 22, 0, Math.PI * 2);
+        ctx.arc(160, lineY - 14, 28, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 22px sans-serif";
+        ctx.font = "bold 28px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(String(idx + 1), 142, lineY - 3);
+        ctx.fillText(String(idx + 1), 160, lineY - 4);
 
-        // Step text: Increased to 30px bold Bengali typography
+        // Step text: Significantly increased font size to 44px bold Bengali typography
         ctx.textAlign = "left";
         ctx.fillStyle = "#1E293B";
-        ctx.font = "600 30px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
-        ctx.fillText(st.slice(3), 178, lineY);
+        ctx.font = "600 44px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+        ctx.fillText(st.slice(3), 205, lineY);
       });
 
-      // 7. Footer: Zero extra space, balanced bottom padding, AmarSalon branding, logo & app download message
-      const footerDividerY = stepBoxY + stepBoxHeight + 40;
+      // 7. Footer: All footer text at the absolute bottom-most position without any below spaces
+      const footerDividerY = 2215;
       ctx.beginPath();
-      ctx.moveTo(70, footerDividerY);
-      ctx.lineTo(width - 70, footerDividerY);
+      ctx.moveTo(80, footerDividerY);
+      ctx.lineTo(width - 80, footerDividerY);
       ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.stroke();
 
       // Salon Logo Emblem & Brand Text
-      const brandY = footerDividerY + 65;
-      drawSalonLogo(ctx, width / 2 - 240, brandY, 34);
+      const brandY = 2300;
+      drawSalonLogo(ctx, width / 2 - 295, brandY, 48);
 
       ctx.textAlign = "left";
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 50px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
-      ctx.fillText("AmarSalon • আমার সেলুন", width / 2 - 185, brandY + 6);
+      ctx.font = "bold 72px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+      ctx.fillText("AmarSalon • আমার সেলুন", width / 2 - 225, brandY + 8);
 
-      // App Download Message
+      // App Download Message (Increased font size & golden amber)
       ctx.textAlign = "center";
       ctx.fillStyle = "#FDE047";
-      ctx.font = "bold 30px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
-      ctx.fillText("📱 সহজ ও দ্রুত সিরিয়ালের জন্য আমাদের অ্যাপটি ইন্সটল করুন", width / 2, brandY + 76);
+      ctx.font = "bold 50px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+      ctx.fillText("📱 সহজ ও দ্রুত সিরিয়ালের জন্য আমাদের অ্যাপটি ইন্সটল করুন", width / 2, 2395);
 
-      // Official URL
+      // Official URL: Resting right at the bottom edge above the border line (zero space below)
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 36px monospace";
-      ctx.fillText("amarsalon.xyz", width / 2, brandY + 130);
+      ctx.font = "bold 60px monospace";
+      ctx.fillText("amarsalon.xyz", width / 2, 2478);
 
       // Full Binary Blob download (prevents URL truncation on large images)
       const filename = `amarsalon-poster-${salon?.code || salon?.slug || "salon"}.png`;
@@ -550,420 +559,423 @@ function OwnerProfileContent() {
               <p className="text-xs text-slate-500">{t.qrPosterSub}</p>
             </div>
 
-            {/* Printable Standard Poster Container */}
-              <div className="bg-[#0D9488] text-white rounded-3xl p-6 border-2 border-white/40 shadow-xl text-center a4-page relative overflow-hidden flex flex-col justify-between">
+            {/* Printable Standard Poster Container (Always fully visible & scrollable) */}
+            <div className="w-full max-w-[440px] mx-auto overflow-visible">
+              <div className="bg-[#0D9488] text-white rounded-3xl p-4 sm:p-5 border-2 border-white/40 shadow-xl text-center a4-page relative flex flex-col justify-between gap-2.5">
                 {/* Top Header */}
-                <div className="border-b border-white/20 pb-4 mb-3 text-center">
-                  <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">
-                    অনলাইনে সিরিয়াল দিতে স্ক্যান করুন
-                  </h1>
-                  <p className="text-xs sm:text-sm font-bold text-amber-300 tracking-wider uppercase mt-1">
-                    SCAN WITH PHONE CAMERA TO BOOK ONLINE
-                  </p>
-                </div>
-
-                {/* Central Hero QR Code Zone */}
-                <div className="my-3">
-                  <div className="inline-block p-4 bg-white rounded-2xl shadow-md">
-                    {qrDataUrl ? (
-                      <img
-                        src={qrDataUrl}
-                        alt="Salon QR Code"
-                        className="w-56 h-56 mx-auto object-contain"
-                      />
-                    ) : (
-                      <div className="w-56 h-56 bg-slate-100 flex items-center justify-center text-xs text-slate-400">
-                        QR কোড তৈরি হচ্ছে...
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-3 text-center space-y-1.5">
-                    {salon?.code && (
-                      <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900 text-white font-mono font-bold text-xs shadow-xs">
-                        <span>{lang === "bn" ? "সেলুন কোড / ID" : "Salon ID"}:</span>
-                        <span className="text-amber-300">#{salon.code}</span>
-                      </div>
-                    )}
-                    <p className="text-base sm:text-lg font-mono font-black text-amber-300 drop-shadow-xs">
-                      amarsalon.xyz/{salon?.code || salon?.slug || ""}
-                    </p>
-                  </div>
-                </div>
-
-                {/* 3 Steps Visual Guide (Significantly Larger Font) */}
-                <div className="bg-white rounded-2xl p-5 border border-teal-100 text-left my-3 space-y-3 text-slate-800 shadow-sm">
-                  <p className="font-extrabold text-slate-900 text-sm sm:text-base mb-1">
-                    সহজ ৩ ধাপে সিরিয়াল নেওয়ার নিয়ম:
-                  </p>
-                  <p className="text-slate-800 font-medium text-xs sm:text-sm flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-bold text-xs shrink-0">১</span>
-                    <span>ফোনের ক্যামেরা দিয়ে QR কোডটি স্ক্যান করুন (বা amarsalon.xyz/{salon?.code || "1001"} এ যান)</span>
-                  </p>
-                  <p className="text-slate-800 font-medium text-xs sm:text-sm flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-bold text-xs shrink-0">২</span>
-                    <span>&apos;প্রিয় সেলুন&apos; (My Saloons)-এ যুক্ত করুন দ্রুত সিরিয়াল পাওয়ার জন্য</span>
-                  </p>
-                  <p className="text-slate-800 font-medium text-xs sm:text-sm flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-bold text-xs shrink-0">৩</span>
-                    <span>ঘরে বসেই চেয়ার খালি আছে কিনা দেখুন ও সিরিয়াল নিন</span>
-                  </p>
-                </div>
-
-                {/* Footer Band with AmarSalon Branding, Icon & App Download Notice (Tightly Coupled) */}
-                <div className="pt-3 border-t border-white/20 text-center space-y-1.5">
-                  <div className="inline-flex items-center justify-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-amber-300 text-teal-950 flex items-center justify-center shadow-xs">
-                      <Scissors className="w-4.5 h-4.5" />
+                <div className="border-b border-white/20 pb-2.5 text-center">
+                    <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight tracking-tight">
+                      অনলাইনে সিরিয়াল দিতে স্ক্যান করুন
+                    </h1>
+                      <p className="text-xs sm:text-sm font-bold text-amber-300 tracking-wider uppercase mt-1">
+                        SCAN WITH PHONE CAMERA TO BOOK ONLINE
+                      </p>
                     </div>
-                    <p className="font-black text-lg sm:text-xl text-white tracking-wide">
-                      AmarSalon <span className="text-amber-300 font-bold">•</span> আমার সেলুন
-                    </p>
+
+                    {/* Central Hero QR Code Zone (With generous breathing space top & bottom) */}
+                    <div className="my-3.5 sm:my-4 flex flex-col items-center">
+                      <div className="inline-block p-3.5 sm:p-4 bg-white rounded-3xl shadow-md">
+                        {qrDataUrl ? (
+                          <img
+                            src={qrDataUrl}
+                            alt="Salon QR Code"
+                            className="w-56 h-56 sm:w-64 sm:h-64 mx-auto object-contain"
+                          />
+                        ) : (
+                          <div className="w-56 h-56 sm:w-64 sm:h-64 bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+                            QR কোড তৈরি হচ্ছে...
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-3 text-center space-y-1.5">
+                        {salon?.code && (
+                          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900 text-white font-mono font-bold text-xs sm:text-sm shadow-xs">
+                            <span>{lang === "bn" ? "সেলুন কোড / ID" : "Salon ID"}:</span>
+                            <span className="text-amber-300">#{salon.code}</span>
+                          </div>
+                        )}
+                        <p className="text-lg sm:text-xl font-mono font-black text-amber-300 drop-shadow-xs">
+                          amarsalon.xyz/{salon?.code || salon?.slug || ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 3 Steps Visual Guide (Increased font size, placed lower, compact white space) */}
+                    <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-teal-100 text-left space-y-2 text-slate-800 shadow-sm mt-3.5 mb-2">
+                      <p className="font-black text-slate-900 text-sm sm:text-base mb-1">
+                        সহজ ৩ ধাপে সিরিয়াল নেওয়ার নিয়ম:
+                      </p>
+                      <p className="text-slate-800 font-semibold text-xs sm:text-sm flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-black text-xs shrink-0">১</span>
+                        <span>ফোনের ক্যামেরা দিয়ে QR কোডটি স্ক্যান করুন (বা amarsalon.xyz/{salon?.code || "1001"} এ যান)</span>
+                      </p>
+                      <p className="text-slate-800 font-semibold text-xs sm:text-sm flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-black text-xs shrink-0">২</span>
+                        <span>&apos;প্রিয় সেলুন&apos; (My Salons)-এ যুক্ত করুন দ্রুত সিরিয়াল পাওয়ার জন্য</span>
+                      </p>
+                      <p className="text-slate-800 font-semibold text-xs sm:text-sm flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-black text-xs shrink-0">৩</span>
+                        <span>ঘরে বসেই চেয়ার খালি আছে কিনা দেখুন ও সিরিয়াল নিন</span>
+                      </p>
+                    </div>
+
+                      {/* Footer Band with AmarSalon Branding, Icon & App Download Notice (At bottom-most position, zero below spaces) */}
+                      <div className="mt-auto pt-2.5 border-t border-white/20 text-center space-y-1.5 pb-0 mb-0">
+                        <div className="inline-flex items-center justify-center gap-2">
+                          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-amber-300 text-teal-950 flex items-center justify-center shadow-xs">
+                            <Scissors className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
+                          </div>
+                          <p className="font-black text-xl sm:text-2xl text-white tracking-wide">
+                            AmarSalon <span className="text-amber-300 font-bold">•</span> আমার সেলুন
+                          </p>
+                        </div>
+                        <p className="text-xs sm:text-sm text-amber-300 font-bold leading-tight">
+                          📱 সহজ ও দ্রুত সিরিয়ালের জন্য আমাদের অ্যাপটি ইন্সটল করুন
+                        </p>
+                        <p className="text-sm sm:text-base font-mono font-black text-white/90 leading-none pb-0 mb-0">
+                          amarsalon.xyz
+                        </p>
+                      </div>
+                    </div>
+                </div>
+
+                {/* Download Poster & Action Buttons */}
+                <div className="space-y-2.5 no-print">
+                  <button
+                    type="button"
+                    onClick={handleDownloadPoster}
+                    disabled={downloadingPoster || !qrDataUrl}
+                    className="w-full flex items-center justify-center gap-2.5 p-4 rounded-2xl bg-[#0D9488] hover:bg-[#115E59] active:scale-[0.99] text-white font-bold text-sm shadow-lg shadow-teal-900/20 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <Download className="w-5 h-5 shrink-0" />
+                    <span>
+                      {downloadingPoster
+                        ? t.downloadingPoster
+                        : lang === "bn"
+                          ? "পোস্টার ডাউনলোড করুন"
+                          : "Download Poster"}
+                    </span>
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handlePrint}
+                      className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 active:scale-95 text-slate-800 font-bold text-xs shadow-xs transition cursor-pointer"
+                    >
+                      <Printer className="w-4 h-4 text-teal-700" />
+                      <span>{t.printPoster}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 active:scale-95 text-slate-800 font-bold text-xs shadow-xs transition cursor-pointer"
+                    >
+                      <Share2 className="w-4 h-4 text-teal-700" />
+                      <span>{t.sharePoster}</span>
+                    </button>
                   </div>
-                  <p className="text-xs sm:text-sm text-amber-200 font-semibold">
-                    📱 সহজ ও দ্রুত সিরিয়ালের জন্য আমাদের অ্যাপটি ইন্সটল করুন
-                  </p>
-                  <p className="text-xs font-mono font-bold text-white/90">
-                    amarsalon.xyz
-                  </p>
                 </div>
               </div>
-
-              {/* Download Poster & Action Buttons */}
-              <div className="space-y-2.5 no-print">
-                <button
-                  type="button"
-                  onClick={handleDownloadPoster}
-                  disabled={downloadingPoster || !qrDataUrl}
-                  className="w-full flex items-center justify-center gap-2.5 p-4 rounded-2xl bg-[#0D9488] hover:bg-[#115E59] active:scale-[0.99] text-white font-bold text-sm shadow-lg shadow-teal-900/20 transition cursor-pointer disabled:opacity-50"
-                >
-                  <Download className="w-5 h-5 shrink-0" />
-                  <span>
-                    {downloadingPoster
-                      ? t.downloadingPoster
-                      : lang === "bn"
-                        ? "পোস্টার ডাউনলোড করুন"
-                        : "Download Poster"}
-                  </span>
-                </button>
-
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={handlePrint}
-                    className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 active:scale-95 text-slate-800 font-bold text-xs shadow-xs transition cursor-pointer"
-                  >
-                    <Printer className="w-4 h-4 text-teal-700" />
-                    <span>{t.printPoster}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-white border border-slate-200 hover:bg-slate-50 active:scale-95 text-slate-800 font-bold text-xs shadow-xs transition cursor-pointer"
-                  >
-                    <Share2 className="w-4 h-4 text-teal-700" />
-                    <span>{t.sharePoster}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
         )}
 
-            {/* TAB 2: PROFILE SETTINGS */}
-            {activeTab === "profile" && (
-              <form onSubmit={handleUpdateProfile} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3.5">
-                <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-                  {lang === "bn" ? "সেলুনের তথ্য সম্পাদনা" : "Salon Profile Settings"}
-                </h2>
+              {/* TAB 2: PROFILE SETTINGS */}
+              {activeTab === "profile" && (
+                <form onSubmit={handleUpdateProfile} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3.5">
+                  <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
+                    {lang === "bn" ? "সেলুনের তথ্য সম্পাদনা" : "Salon Profile Settings"}
+                  </h2>
 
-                {profileMsg && (
-                  <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs">
-                    {profileMsg}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {lang === "bn" ? "সেলুনের নাম (বাংলা)" : "Salon Name (Bangla)"} *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={nameBn}
-                    onChange={(e) => setNameBn(e.target.value)}
-                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {lang === "bn" ? "সেলুনের নাম (English)" : "Salon Name (English)"} *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={nameEn}
-                    onChange={(e) => setNameEn(e.target.value)}
-                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {t.address} *
-                  </label>
-                  <textarea
-                    required
-                    rows={2}
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {t.phone} *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className="w-full text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {t.chairs}
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={totalChairs}
-                      onChange={(e) => setTotalChairs(Number(e.target.value))}
-                      className="w-full text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {lang === "bn" ? "ক্যাটাগরি" : "Category"}
-                    </label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-medium"
-                    >
-                      <option value="GENTS">{t.gents}</option>
-                      <option value="LADIES">{t.ladies}</option>
-                      <option value="UNISEX">{t.unisex}</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-6">
-                    <input
-                      type="checkbox"
-                      id="acCheckbox"
-                      checked={isAc}
-                      onChange={(e) => setIsAc(e.target.checked)}
-                      className="w-4 h-4 text-teal-600 rounded"
-                    />
-                    <label htmlFor="acCheckbox" className="text-xs font-semibold text-slate-700">
-                      {lang === "bn" ? "এসি (AC) সুবিধা আছে" : "Air Conditioned"}
-                    </label>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={updatingProfile}
-                    className="w-full py-3 rounded-xl font-bold text-sm bg-[#0D9488] hover:bg-[#115E59] text-white shadow-md transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>{updatingProfile ? t.loading : t.save}</span>
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* TAB 3: SUBSCRIPTIONS & MONETIZATION */}
-            {activeTab === "sub" && (
-              <div className="space-y-4">
-                {/* Status Card */}
-                <div className="bg-gradient-to-br from-purple-900 to-indigo-950 text-white p-5 rounded-3xl shadow-md">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-purple-200">
-                      {t.subscriptionStatus}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${subStatus?.status === "ACTIVE"
-                        ? "bg-emerald-400 text-slate-950"
-                        : subStatus?.status === "TRIAL"
-                          ? "bg-amber-400 text-slate-950"
-                          : "bg-rose-500 text-white"
-                        }`}
-                    >
-                      {subStatus?.status}
-                    </span>
-                  </div>
-
-                  <div className="my-2">
-                    {subStatus?.status === "TRIAL" ? (
-                      <div>
-                        <p className="text-xl font-black text-amber-300">
-                          {subStatus?.trialDaysLeft} {t.trialDaysLeft}
-                        </p>
-                        <p className="text-xs text-purple-200 mt-0.5">
-                          {lang === "bn"
-                            ? "ফ্রি ট্রায়াল শেষ হওয়ার পর সেবা সচল রাখতে সাবস্ক্রিপশন নিন।"
-                            : "Renew subscription to keep your salon active after trial."}
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm font-bold text-purple-200">
-                          {lang === "bn" ? "মেয়াদ উত্তীর্ণের তারিখ:" : "Valid Until:"}
-                        </p>
-                        <p className="text-lg font-mono font-bold text-emerald-300">
-                          {subStatus?.subscriptionEndsAt
-                            ? new Date(subStatus.subscriptionEndsAt).toISOString().split("T")[0]
-                            : "N/A"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Plan Options Selector */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan("MONTHLY")}
-                    className={`p-3.5 rounded-2xl border-2 text-left transition cursor-pointer ${selectedPlan === "MONTHLY"
-                      ? "bg-teal-50 border-teal-600 shadow-xs ring-1 ring-teal-600/30"
-                      : "bg-white border-slate-200"
-                      }`}
-                  >
-                    <p className="font-bold text-xs text-slate-900">মাসিক প্যাকেজ</p>
-                    <p className="text-base font-black text-teal-800 font-mono mt-1">৳৪৯৯</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">৩০ দিন আনলিমিটেড</p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPlan("YEARLY")}
-                    className={`p-3.5 rounded-2xl border-2 text-left transition cursor-pointer relative ${selectedPlan === "YEARLY"
-                      ? "bg-purple-50 border-purple-600 shadow-xs ring-1 ring-purple-600/30"
-                      : "bg-white border-slate-200"
-                      }`}
-                  >
-                    <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded-md">
-                      ১৫% ছাড়
-                    </span>
-                    <p className="font-bold text-xs text-slate-900">বার্ষিক প্যাকেজ</p>
-                    <p className="text-base font-black text-purple-900 font-mono mt-1">৳৪,৯৯৯</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">৩৬৫ দিন সাশ্রয়ী</p>
-                  </button>
-                </div>
-
-                {/* Payment Method & Submission */}
-                <form onSubmit={handleSubmitPayment} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3.5">
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    {lang === "bn" ? "পেমেন্ট মাধ্যম বেছে নিন" : "Payment Method"}
-                  </h3>
-
-                  {paymentMsg && (
-                    <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
-                      {paymentMsg}
-                    </div>
-                  )}
-                  {paymentError && (
-                    <div className="p-3 rounded-xl bg-rose-50 text-rose-800 text-xs border border-rose-200">
-                      {paymentError}
+                  {profileMsg && (
+                    <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-800 text-xs">
+                      {profileMsg}
                     </div>
                   )}
 
-                  {/* Methods */}
-                  <div className="grid grid-cols-4 gap-1.5 text-center text-xs font-bold">
-                    {(["BKASH", "NAGAD", "ROCKET", "BANK"] as const).map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={() => setPaymentMethod(m)}
-                        className={`py-2 px-1 rounded-xl border transition cursor-pointer text-[11px] ${paymentMethod === m
-                          ? "bg-teal-50 border-teal-600 text-teal-900 font-extrabold"
-                          : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                          }`}
-                      >
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Instructions */}
-                  <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1">
-                    <p className="font-semibold text-slate-900">{t.mfsInstructions}</p>
-                    <p className="font-mono font-bold text-teal-800 text-sm">
-                      01700000000 (মার্চেন্ট / পারসোনাল)
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে লিখে জমা দিন।
-                    </p>
-                  </div>
-
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {t.senderPhone}
-                    </label>
-                    <input
-                      type="tel"
-                      value={senderNumber}
-                      onChange={(e) => setSenderNumber(e.target.value)}
-                      placeholder="যে নম্বর থেকে টাকা পাঠিয়েছেন"
-                      className="w-full text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {t.trxIdLabel} <span className="text-rose-500">*</span>
+                      {lang === "bn" ? "সেলুনের নাম (বাংলা)" : "Salon Name (Bangla)"} *
                     </label>
                     <input
                       type="text"
                       required
-                      value={trxId}
-                      onChange={(e) => setTrxId(e.target.value)}
-                      placeholder="যেমন: BKASH9928371X"
-                      className="w-full text-sm font-mono font-bold uppercase bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
+                      value={nameBn}
+                      onChange={(e) => setNameBn(e.target.value)}
+                      className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={submittingPayment}
-                    className="w-full py-3 rounded-xl font-bold text-sm bg-purple-700 hover:bg-purple-800 text-white shadow-md transition cursor-pointer disabled:opacity-50"
-                  >
-                    {submittingPayment ? t.loading : t.submit}
-                  </button>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      {lang === "bn" ? "সেলুনের নাম (English)" : "Salon Name (English)"} *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={nameEn}
+                      onChange={(e) => setNameEn(e.target.value)}
+                      className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      {t.address} *
+                    </label>
+                    <textarea
+                      required
+                      rows={2}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        {t.phone} *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        {t.chairs}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={totalChairs}
+                        onChange={(e) => setTotalChairs(Number(e.target.value))}
+                        className="w-full text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        {lang === "bn" ? "ক্যাটাগরি" : "Category"}
+                      </label>
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-medium"
+                      >
+                        <option value="GENTS">{t.gents}</option>
+                        <option value="LADIES">{t.ladies}</option>
+                        <option value="UNISEX">{t.unisex}</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-6">
+                      <input
+                        type="checkbox"
+                        id="acCheckbox"
+                        checked={isAc}
+                        onChange={(e) => setIsAc(e.target.checked)}
+                        className="w-4 h-4 text-teal-600 rounded"
+                      />
+                      <label htmlFor="acCheckbox" className="text-xs font-semibold text-slate-700">
+                        {lang === "bn" ? "এসি (AC) সুবিধা আছে" : "Air Conditioned"}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={updatingProfile}
+                      className="w-full py-3 rounded-xl font-bold text-sm bg-[#0D9488] hover:bg-[#115E59] text-white shadow-md transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{updatingProfile ? t.loading : t.save}</span>
+                    </button>
+                  </div>
                 </form>
-              </div>
-            )}
-          </div>
-                    </AppShell>
-  );
+              )}
+
+              {/* TAB 3: SUBSCRIPTIONS & MONETIZATION */}
+              {activeTab === "sub" && (
+                <div className="space-y-4">
+                  {/* Status Card */}
+                  <div className="bg-gradient-to-br from-purple-900 to-indigo-950 text-white p-5 rounded-3xl shadow-md">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold uppercase tracking-wider text-purple-200">
+                        {t.subscriptionStatus}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${subStatus?.status === "ACTIVE"
+                          ? "bg-emerald-400 text-slate-950"
+                          : subStatus?.status === "TRIAL"
+                            ? "bg-amber-400 text-slate-950"
+                            : "bg-rose-500 text-white"
+                          }`}
+                      >
+                        {subStatus?.status}
+                      </span>
+                    </div>
+
+                    <div className="my-2">
+                      {subStatus?.status === "TRIAL" ? (
+                        <div>
+                          <p className="text-xl font-black text-amber-300">
+                            {subStatus?.trialDaysLeft} {t.trialDaysLeft}
+                          </p>
+                          <p className="text-xs text-purple-200 mt-0.5">
+                            {lang === "bn"
+                              ? "ফ্রি ট্রায়াল শেষ হওয়ার পর সেবা সচল রাখতে সাবস্ক্রিপশন নিন।"
+                              : "Renew subscription to keep your salon active after trial."}
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm font-bold text-purple-200">
+                            {lang === "bn" ? "মেয়াদ উত্তীর্ণের তারিখ:" : "Valid Until:"}
+                          </p>
+                          <p className="text-lg font-mono font-bold text-emerald-300">
+                            {subStatus?.subscriptionEndsAt
+                              ? new Date(subStatus.subscriptionEndsAt).toISOString().split("T")[0]
+                              : "N/A"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Plan Options Selector */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan("MONTHLY")}
+                      className={`p-3.5 rounded-2xl border-2 text-left transition cursor-pointer ${selectedPlan === "MONTHLY"
+                        ? "bg-teal-50 border-teal-600 shadow-xs ring-1 ring-teal-600/30"
+                        : "bg-white border-slate-200"
+                        }`}
+                    >
+                      <p className="font-bold text-xs text-slate-900">মাসিক প্যাকেজ</p>
+                      <p className="text-base font-black text-teal-800 font-mono mt-1">৳৪৯৯</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">৩০ দিন আনলিমিটেড</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPlan("YEARLY")}
+                      className={`p-3.5 rounded-2xl border-2 text-left transition cursor-pointer relative ${selectedPlan === "YEARLY"
+                        ? "bg-purple-50 border-purple-600 shadow-xs ring-1 ring-purple-600/30"
+                        : "bg-white border-slate-200"
+                        }`}
+                    >
+                      <span className="absolute top-2 right-2 text-[9px] font-bold bg-amber-400 text-slate-950 px-1.5 py-0.2 rounded-md">
+                        ১৫% ছাড়
+                      </span>
+                      <p className="font-bold text-xs text-slate-900">বার্ষিক প্যাকেজ</p>
+                      <p className="text-base font-black text-purple-900 font-mono mt-1">৳৪,৯৯৯</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">৩৬৫ দিন সাশ্রয়ী</p>
+                    </button>
+                  </div>
+
+                  {/* Payment Method & Submission */}
+                  <form onSubmit={handleSubmitPayment} className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs space-y-3.5">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                      {lang === "bn" ? "পেমেন্ট মাধ্যম বেছে নিন" : "Payment Method"}
+                    </h3>
+
+                    {paymentMsg && (
+                      <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
+                        {paymentMsg}
+                      </div>
+                    )}
+                    {paymentError && (
+                      <div className="p-3 rounded-xl bg-rose-50 text-rose-800 text-xs border border-rose-200">
+                        {paymentError}
+                      </div>
+                    )}
+
+                    {/* Methods */}
+                    <div className="grid grid-cols-4 gap-1.5 text-center text-xs font-bold">
+                      {(["BKASH", "NAGAD", "ROCKET", "BANK"] as const).map((m) => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => setPaymentMethod(m)}
+                          className={`py-2 px-1 rounded-xl border transition cursor-pointer text-[11px] ${paymentMethod === m
+                            ? "bg-teal-50 border-teal-600 text-teal-900 font-extrabold"
+                            : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                            }`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Instructions */}
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-1">
+                      <p className="font-semibold text-slate-900">{t.mfsInstructions}</p>
+                      <p className="font-mono font-bold text-teal-800 text-sm">
+                        01700000000 (মার্চেন্ট / পারসোনাল)
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে লিখে জমা দিন।
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        {t.senderPhone}
+                      </label>
+                      <input
+                        type="tel"
+                        value={senderNumber}
+                        onChange={(e) => setSenderNumber(e.target.value)}
+                        placeholder="যে নম্বর থেকে টাকা পাঠিয়েছেন"
+                        className="w-full text-sm font-mono bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        {t.trxIdLabel} <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={trxId}
+                        onChange={(e) => setTrxId(e.target.value)}
+                        placeholder="যেমন: BKASH9928371X"
+                        className="w-full text-sm font-mono font-bold uppercase bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submittingPayment}
+                      className="w-full py-3 rounded-xl font-bold text-sm bg-purple-700 hover:bg-purple-800 text-white shadow-md transition cursor-pointer disabled:opacity-50"
+                    >
+                      {submittingPayment ? t.loading : t.submit}
+                    </button>
+                  </form>
+                </div >
+              )
+              }
+            </div >
+          </AppShell >
+        );
 }
 
-export default function OwnerProfilePage() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">লোড হচ্ছে...</div>}>
-      <OwnerProfileContent />
-    </Suspense>
-  );
+        export default function OwnerProfilePage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">লোড হচ্ছে...</div>}>
+          <OwnerProfileContent />
+        </Suspense>
+        );
 }

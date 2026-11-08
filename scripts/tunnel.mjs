@@ -14,13 +14,15 @@ if (fs.existsSync(urlFilePath)) {
   fs.unlinkSync(urlFilePath);
 }
 
+const port = process.env.PORT || "3000";
+
 const logStream = fs.createWriteStream(logFilePath, { flags: "a" });
 
-console.log("\x1b[36m[AmarSaloon Tunnel]\x1b[0m Starting Cloudflare Quick Tunnel for http://localhost:3000...");
+console.log(`\x1b[36m[AmarSaloon Tunnel]\x1b[0m Starting Cloudflare Quick Tunnel for http://localhost:${port}...`);
 
 const child = spawn(
   "cloudflared",
-  ["tunnel", "--http-host-header", "localhost:3000", "--url", "http://localhost:3000"],
+  ["tunnel", "--http-host-header", `localhost:${port}`, "--url", `http://localhost:${port}`],
   {
     stdio: ["inherit", "pipe", "pipe"],
     shell: true,
