@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { Scissors, Globe, User, LogOut, ChevronDown, Store, Shield } from "lucide-react";
+import { Scissors, Globe, User, LogOut, ChevronDown, Store, Shield, Bell } from "lucide-react";
 
 interface SalonOption {
   id: string;
@@ -14,7 +14,18 @@ interface SalonOption {
 }
 
 export default function Header() {
-  const { lang, setLang, t, user, logout, activeSalonId, setActiveSalonId } = useApp();
+  const {
+    lang,
+    setLang,
+    t,
+    user,
+    logout,
+    activeSalonId,
+    setActiveSalonId,
+    notificationsEnabled,
+    requestNotifications,
+    showNotificationToast,
+  } = useApp();
   const pathname = usePathname();
   const [ownerSalons, setOwnerSalons] = useState<SalonOption[]>([]);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -70,6 +81,39 @@ export default function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Notification Permission Bell */}
+          <button
+            onClick={async () => {
+              const granted = await requestNotifications();
+              if (granted) {
+                showNotificationToast({
+                  title: lang === "bn" ? "🔔 লাইভ নোটিফিকেশন সক্রিয় হয়েছে" : "🔔 Live Alerts Enabled",
+                  message:
+                    lang === "bn"
+                      ? "সিরিয়াল ও চেয়ারের লাইভ আপডেট এখন সরাসরি আপনার ডিভাইসে পাবেন।"
+                      : "You will now receive live push alerts for queues and turns.",
+                  type: "INFO",
+                });
+              }
+            }}
+            className={`flex items-center justify-center w-8 h-8 rounded-full transition cursor-pointer border ${
+              notificationsEnabled
+                ? "bg-teal-50 border-teal-200 text-teal-700"
+                : "bg-slate-100 border-slate-200 text-slate-500 hover:text-slate-800"
+            }`}
+            title={
+              notificationsEnabled
+                ? lang === "bn"
+                  ? "লাইভ নোটিফিকেশন চালু আছে"
+                  : "Live alerts are enabled"
+                : lang === "bn"
+                ? "নোটিফিকেশন চালু করুন"
+                : "Enable live alerts"
+            }
+          >
+            <Bell className={`w-3.5 h-3.5 ${notificationsEnabled ? "fill-teal-600" : ""}`} />
+          </button>
+
           {/* Language Toggle */}
           <button
             onClick={() => setLang(lang === "bn" ? "en" : "bn")}

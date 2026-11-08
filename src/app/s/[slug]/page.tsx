@@ -32,6 +32,7 @@ interface ServiceItem {
 
 interface SalonDetails {
   id: string;
+  code?: string;
   slug: string;
   nameBn: string;
   nameEn: string;
@@ -58,7 +59,17 @@ export default function SalonProfilePage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const { lang, t, user, favorites, toggleFavorite, playChime, triggerHaptic } = useApp();
+  const {
+    lang,
+    t,
+    user,
+    favorites,
+    toggleFavorite,
+    playChime,
+    triggerHaptic,
+    setActiveBookingId,
+    requestNotifications,
+  } = useApp();
 
   const [salon, setSalon] = useState<SalonDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -193,8 +204,11 @@ export default function SalonProfilePage() {
       if (res.ok && data.booking) {
         playChime();
         triggerHaptic(70);
+        setActiveBookingId(data.booking.id);
+        requestNotifications().catch(() => {});
 
         try {
+          localStorage.setItem("amarsaloon_active_booking_id", data.booking.id);
           localStorage.setItem("amarsaloon_last_booking_id", data.booking.id);
           localStorage.setItem("amarsaloon_guest_phone", guestPhone);
           if (guestName) localStorage.setItem("amarsaloon_guest_name", guestName);
@@ -267,9 +281,14 @@ export default function SalonProfilePage() {
 
         {/* Hero Title & Pill */}
         <div className="absolute bottom-3 left-4 right-4 text-white">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            {salon.code && (
+              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-slate-900/85 backdrop-blur-xs text-white border border-white/20">
+                ID: #{salon.code}
+              </span>
+            )}
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
-              {salon.category}
+              {salon.category === "UNISEX" ? (lang === "bn" ? "কমন" : "COMMON") : salon.category}
             </span>
             {salon.isAc && (
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-800/80 backdrop-blur-xs text-teal-200 border border-teal-500/40 flex items-center gap-1">

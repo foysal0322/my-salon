@@ -8,8 +8,10 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const salon = await prisma.saloon.findUnique({
-      where: { slug },
+    const salon = await prisma.saloon.findFirst({
+      where: {
+        OR: [{ slug }, { code: slug }],
+      },
       include: {
         services: {
           where: { isActive: true },
@@ -61,6 +63,7 @@ export async function GET(
     return NextResponse.json({
       salon: {
         id: salon.id,
+        code: (salon as any).code || null,
         slug: salon.slug,
         nameBn: salon.nameBn,
         nameEn: salon.nameEn,

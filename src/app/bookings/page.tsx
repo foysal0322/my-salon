@@ -19,6 +19,11 @@ import {
 } from "lucide-react";
 
 import { Suspense } from "react";
+import {
+  sendBrowserNotification,
+  playNotificationChime,
+  triggerDeviceHaptic,
+} from "@/lib/notifications";
 
 function BookingsContent() {
   const searchParams = useSearchParams();
@@ -44,8 +49,20 @@ function BookingsContent() {
 
         // Turn arrived notification
         if (data.queueMetrics?.isCurrentTurn && !hasAlertedTurn) {
-          playChime();
-          triggerHaptic(80);
+          playNotificationChime("urgent");
+          triggerDeviceHaptic([200, 100, 200, 100, 300]);
+          sendBrowserNotification(
+            lang === "bn"
+              ? `🎉 আপনার সিরিয়াল এসেছে! #${data.booking.tokenNumber}`
+              : `🎉 Your Turn Has Arrived! #${data.booking.tokenNumber}`,
+            {
+              body:
+                lang === "bn"
+                  ? `${data.saloon?.nameBn || "সেলুন"} এ আপনার চেয়ার প্রস্তুত। এখনই আসুন!`
+                  : `Your chair is ready at ${data.saloon?.nameEn || "the salon"}. Please enter now!`,
+              url: `/bookings?active=${data.booking.id}`,
+            }
+          );
           setHasAlertedTurn(true);
         }
       }

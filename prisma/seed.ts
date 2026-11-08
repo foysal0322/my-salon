@@ -88,6 +88,7 @@ async function main() {
   const salon1 = await prisma.saloon.create({
     data: {
       ownerId: owner1.id,
+      code: "1001",
       slug: "mens-care-dhanmondi",
       nameBn: "মেনজ কেয়ার সেলুন অ্যান্ড স্পা",
       nameEn: "Men's Care Salon & Spa",
@@ -118,6 +119,7 @@ async function main() {
   const salon2 = await prisma.saloon.create({
     data: {
       ownerId: owner1.id,
+      code: "1002",
       slug: "royal-cut-mirpur",
       nameBn: "রয়্যাল কাট সেলুন",
       nameEn: "Royal Cut Salon",
@@ -146,6 +148,7 @@ async function main() {
   const salon3 = await prisma.saloon.create({
     data: {
       ownerId: owner2.id,
+      code: "1003",
       slug: "glow-glamour-banani",
       nameBn: "গ্লো অ্যান্ড গ্ল্যামার বিউটি পার্লার",
       nameEn: "Glow & Glamour Beauty Parlour",
@@ -172,13 +175,14 @@ async function main() {
     },
   });
 
-  // Salon 4: Elite Unisex Gulshan
+  // Salon 4: Elite Common Gulshan
   const salon4 = await prisma.saloon.create({
     data: {
       ownerId: owner3.id,
+      code: "1004",
       slug: "elite-unisex-gulshan",
-      nameBn: "এলিট ইউনিসেক্স সেলুন অ্যান্ড স্টুডিও",
-      nameEn: "Elite Unisex Salon & Studio",
+      nameBn: "এলিট কমন সেলুন অ্যান্ড স্টুডিও",
+      nameEn: "Elite Common Salon & Studio",
       category: "UNISEX",
       isAc: true,
       address: "গুলশান এভিনিউ, গুলশান-১, ঢাকা - ১২১২",

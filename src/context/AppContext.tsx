@@ -1,7 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { Language, translations } from "@/lib/translations";
+import {
+  requestNotificationPermission,
+  sendBrowserNotification,
+  playNotificationChime,
+  triggerDeviceHaptic,
+  hasNotificationPermission,
+} from "@/lib/notifications";
 
 export interface UserSession {
   id: string;
@@ -9,6 +16,14 @@ export interface UserSession {
   name: string | null;
   role: "CUSTOMER" | "OWNER" | "ADMIN";
   languagePref: string;
+}
+
+export interface NotificationToast {
+  id: string;
+  title: string;
+  message: string;
+  url?: string;
+  type: "OWNER_NEW_BOOKING" | "USER_TURN_READY" | "INFO";
 }
 
 interface AppContextType {
@@ -29,6 +44,14 @@ interface AppContextType {
   showInstallBanner: boolean;
   playChime: () => void;
   triggerHaptic: (ms?: number) => void;
+  // Live Queue Notification System
+  activeBookingId: string | null;
+  setActiveBookingId: (id: string | null) => void;
+  notificationToast: NotificationToast | null;
+  dismissNotificationToast: () => void;
+  showNotificationToast: (toast: Omit<NotificationToast, "id">) => void;
+  notificationsEnabled: boolean;
+  requestNotifications: () => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -42,7 +65,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(true);
 
-  // Initialize from localStorage and check PWA mode
+  // Notification state
+  const [activeBookingId, setActiveBookingIdState] = useState<string | null>(null);
+  const [notificationToast, setNotificationToast] = useState<NotificationToast | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const prevOwnerWaitingCount = useRef<number | null>(null);
+
+  // Initialize from localStorage and check PWA mode & notifications
   useEffect(() => {
     try {
       const savedLang = localStorage.getItem("amarsaloon_lang") as Language;
@@ -60,10 +89,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setActiveSalonId(savedSalon);
       }
 
+      const savedActiveBooking =
+        localStorage.getItem("amarsaloon_active_booking_id") ||
+        localStorage.getItem("amarsaloon_last_booking_id");
+      if (savedActiveBooking) {
+        setActiveBookingIdState(savedActiveBooking);
+      }
+
       const bannerDismissed = localStorage.getItem("amarsaloon_banner_dismissed");
       if (bannerDismissed === "true") {
         setShowInstallBanner(false);
       }
+
+      // Check notification permission
+      setNotificationsEnabled(hasNotificationPermission());
 
       // Check standalone mode
       const isStandalone =
@@ -98,6 +137,181 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Set active booking ID with persistence
+  const setActiveBookingId = (id: string | null) => {
+    setActiveBookingIdState(id);
+    try {
+      if (id) {
+        localStorage.setItem("amarsaloon_active_booking_id", id);
+        localStorage.setItem("amarsaloon_last_booking_id", id);
+      } else {
+        localStorage.removeItem("amarsaloon_active_booking_id");
+      }
+    } catch (e) {}
+  };
+
+  // Dismiss in-app toast
+  const dismissNotificationToast = () => {
+    setNotificationToast(null);
+  };
+
+  // Show manual in-app toast with chime & browser push
+  const showNotificationToast = (toast: Omit<NotificationToast, "id">) => {
+    const id = `toast_${Date.now()}`;
+    playNotificationChime(toast.type === "USER_TURN_READY" ? "urgent" : "normal");
+    triggerDeviceHaptic(toast.type === "USER_TURN_READY" ? [200, 100, 200, 100, 300] : [150, 80, 150]);
+    sendBrowserNotification(toast.title, {
+      body: toast.message,
+      url: toast.url,
+    });
+    setNotificationToast({ ...toast, id });
+  };
+
+  // Request system notification permission
+  const requestNotifications = async (): Promise<boolean> => {
+    const granted = await requestNotificationPermission();
+    setNotificationsEnabled(granted);
+    return granted;
+  };
+
+  // Auto-dismiss notification toast after 10 seconds
+  useEffect(() => {
+    if (!notificationToast) return;
+    const timer = setTimeout(() => {
+      setNotificationToast(null);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [notificationToast]);
+
+  // Real-time background poller: Customer Serial Available / Turn Notification
+  useEffect(() => {
+    if (!activeBookingId) return;
+
+    let isMounted = true;
+    const checkCustomerTurn = async () => {
+      try {
+        const res = await fetch(`/api/v1/bookings?id=${activeBookingId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!isMounted || !data.booking) return;
+
+        const isCurrentTurn = Boolean(data.queueMetrics?.isCurrentTurn);
+        const status = data.booking.status;
+
+        // If completed or cancelled, clear active tracker
+        if (["COMPLETED", "CANCELLED", "NO_SHOW", "SKIPPED"].includes(status)) {
+          setActiveBookingId(null);
+          return;
+        }
+
+        // When user's serial is available / current turn
+        if (isCurrentTurn) {
+          const alertedKey = `amarsaloon_alerted_${activeBookingId}`;
+          const alreadyAlerted = localStorage.getItem(alertedKey) === "true";
+
+          if (!alreadyAlerted) {
+            try {
+              localStorage.setItem(alertedKey, "true");
+            } catch (e) {}
+
+            playNotificationChime("urgent");
+            triggerDeviceHaptic([200, 100, 200, 100, 300]);
+
+            const title =
+              lang === "bn"
+                ? `🎉 আপনার সিরিয়াল এসেছে! #${data.booking.tokenNumber}`
+                : `🎉 Your Turn Has Arrived! #${data.booking.tokenNumber}`;
+            const message =
+              lang === "bn"
+                ? `${data.saloon?.nameBn || "সেলুন"} এ আপনার চেয়ার প্রস্তুত। এখনই প্রবেশ করুন!`
+                : `Your chair is ready at ${data.saloon?.nameEn || "the salon"}. Please enter now!`;
+
+            sendBrowserNotification(title, {
+              body: message,
+              url: `/bookings?active=${activeBookingId}`,
+            });
+
+            setNotificationToast({
+              id: `user_turn_${Date.now()}`,
+              title,
+              message,
+              url: `/bookings?active=${activeBookingId}`,
+              type: "USER_TURN_READY",
+            });
+          }
+        }
+      } catch (e) {}
+    };
+
+    checkCustomerTurn();
+    const interval = setInterval(checkCustomerTurn, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [activeBookingId, lang]);
+
+  // Real-time background poller: Salon Owner Live Serial Notification
+  useEffect(() => {
+    if (user?.role !== "OWNER" || !activeSalonId) {
+      prevOwnerWaitingCount.current = null;
+      return;
+    }
+
+    let isMounted = true;
+    const checkOwnerLiveQueue = async () => {
+      try {
+        const res = await fetch(`/api/v1/bookings?saloonId=${activeSalonId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!isMounted || !data.bookings) return;
+
+        const waiting = data.waiting || [];
+
+        // Check if a new live serial booking was placed
+        if (
+          prevOwnerWaitingCount.current !== null &&
+          waiting.length > prevOwnerWaitingCount.current
+        ) {
+          const latest = waiting[waiting.length - 1];
+          playNotificationChime("normal");
+          triggerDeviceHaptic([150, 80, 150]);
+
+          const title =
+            lang === "bn"
+              ? "🔔 নতুন কাস্টমার সিরিয়াল নিয়েছেন!"
+              : "🔔 New Live Queue Booking!";
+          const message =
+            lang === "bn"
+              ? `টোকেন #${String(latest.tokenNumber).padStart(3, "0")} (${latest.guestName}) সিরিয়ালে যুক্ত হয়েছেন।`
+              : `Token #${String(latest.tokenNumber).padStart(3, "0")} (${latest.guestName}) joined the queue.`;
+
+          sendBrowserNotification(title, {
+            body: message,
+            url: "/owner/dashboard",
+          });
+
+          setNotificationToast({
+            id: `owner_alert_${Date.now()}`,
+            title,
+            message,
+            url: "/owner/dashboard",
+            type: "OWNER_NEW_BOOKING",
+          });
+        }
+
+        prevOwnerWaitingCount.current = waiting.length;
+      } catch (e) {}
+    };
+
+    checkOwnerLiveQueue();
+    const interval = setInterval(checkOwnerLiveQueue, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [user, activeSalonId, lang]);
+
   // Fetch user favorites when user logs in
   useEffect(() => {
     if (user?.id) {
@@ -110,7 +324,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         })
         .catch(() => {});
     } else {
-      // Load guest local favorites
       try {
         const guestFavs = localStorage.getItem("amarsaloon_guest_favs");
         if (guestFavs) {
@@ -140,6 +353,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const handleSetActiveSalon = (id: string | null) => {
     setActiveSalonId(id);
+    prevOwnerWaitingCount.current = null;
     try {
       if (id) {
         localStorage.setItem("amarsaloon_active_salon", id);
@@ -187,7 +401,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
       setDeferredPrompt(null);
     } else {
-      // If iOS Safari or unsupported, show info modal or hint
       alert(
         lang === "bn"
           ? "আইফোনে ইনস্টল করতে সাফারি ব্রাউজারের নিচে 'Share' বাটনে ক্লিক করে 'Add to Home Screen' বেছে নিন।"
@@ -204,32 +417,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const playChime = () => {
-    try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1); // A5
-
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.6);
-    } catch (e) {}
+    playNotificationChime("normal");
   };
 
   const triggerHaptic = (ms = 40) => {
-    try {
-      if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
-        window.navigator.vibrate(ms);
-      }
-    } catch (e) {}
+    triggerDeviceHaptic(ms);
   };
 
   return (
@@ -252,6 +444,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         showInstallBanner: showInstallBanner && !isPwaInstalled,
         playChime,
         triggerHaptic,
+        activeBookingId,
+        setActiveBookingId,
+        notificationToast,
+        dismissNotificationToast,
+        showNotificationToast,
+        notificationsEnabled,
+        requestNotifications,
       }}
     >
       {children}

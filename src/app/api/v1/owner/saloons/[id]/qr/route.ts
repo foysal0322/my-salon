@@ -11,17 +11,49 @@ export async function GET(
     const { id } = await params;
     const salon = await prisma.saloon.findUnique({
       where: { id },
-      select: { slug: true, nameBn: true, nameEn: true },
+      select: {
+        id: true,
+        slug: true,
+        nameBn: true,
+        nameEn: true,
+        code: true,
+        address: true,
+        phone: true,
+        category: true,
+        isAc: true,
+        totalChairs: true,
+        ownerId: true,
+      } as any,
     });
 
     if (!salon) {
       return NextResponse.json({ error: "সেলুন পাওয়া যায়নি।" }, { status: 404 });
     }
 
-    // Origin or canonical domain
-    const host = request.headers.get("host") || "amarsaloon.com";
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const qrTargetUrl = `${protocol}://${host}/s/${salon.slug}?utm_source=qr_poster`;
+    // Canonical domain for QR poster & customer booking
+    const targetPath = (salon as any).code || `s/${salon.slug}`;
+    const qrTargetUrl = `https://amarsalon.xyz/${targetPath}`;
+
+    const { searchParams } = new URL(request.url);
+    if (searchParams.get("download") === "1" || searchParams.get("download") === "true") {
+      const pngBuffer = await QRCode.toBuffer(qrTargetUrl, {
+        errorCorrectionLevel: "H",
+        margin: 2,
+        width: 1000,
+        color: {
+          dark: "#0F172A",
+          light: "#FFFFFF",
+        },
+      });
+
+      return new Response(pngBuffer as any, {
+        headers: {
+          "Content-Type": "image/png",
+          "Content-Disposition": `attachment; filename="amarsalon-qr-${(salon as any).code || salon.slug}.png"`,
+          "Cache-Control": "public, max-age=86400",
+        },
+      });
+    }
 
     // Generate high error-correction (Level H) QR code Data URL
     const qrDataUrl = await QRCode.toDataURL(qrTargetUrl, {
@@ -38,6 +70,8 @@ export async function GET(
       qrTargetUrl,
       qrDataUrl,
       slug: salon.slug,
+      code: (salon as any).code || null,
+      salon,
     });
   } catch (error: any) {
     console.error("QR generation error:", error);

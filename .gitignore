@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+tunnel-url.txt
+tunnel.log
 
 # database
 *.db

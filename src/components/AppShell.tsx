@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import InstallBanner from "@/components/InstallBanner";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
+import GlobalNotificationToast from "@/components/GlobalNotificationToast";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -23,6 +24,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-slate-200/50 flex justify-center selection:bg-teal-500 selection:text-white">
       <div className="w-full max-w-[480px] min-h-dvh bg-[#FAF9F6] shadow-2xl relative flex flex-col border-x border-slate-200/80 pb-20 overflow-x-hidden">
+        <GlobalNotificationToast />
         <InstallBanner />
         <Header />
         <main className="flex-1 flex flex-col">{children}</main>

@@ -1,6 +1,38 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const salon = await prisma.saloon.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: { services: true, bookings: true },
+        },
+      },
+    });
+
+    if (!salon) {
+      return NextResponse.json(
+        { error: "সেলুন খুঁজে পাওয়া যায়নি।" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ salon });
+  } catch (error: any) {
+    console.error("Owner salon state fetch error:", error);
+    return NextResponse.json(
+      { error: "সেলুন লোড করতে সমস্যা হয়েছে।" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

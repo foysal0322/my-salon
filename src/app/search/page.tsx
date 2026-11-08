@@ -179,16 +179,23 @@ export default function SearchPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="font-bold text-sm text-slate-900 truncate">
-                      {lang === "bn" ? salon.nameBn : salon.nameEn}
-                    </h3>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="font-bold text-sm text-slate-900 truncate">
+                        {lang === "bn" ? salon.nameBn : salon.nameEn}
+                      </h3>
+                      {salon.code && (
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
+                          #{salon.code}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5 truncate">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="truncate">{salon.address}</span>
                     </p>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
-                    {salon.category}
+                    {salon.category === "UNISEX" ? (lang === "bn" ? "কমন" : "COMMON") : salon.category}
                   </span>
                 </div>
 

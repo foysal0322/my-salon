@@ -253,7 +253,8 @@ export async function GET(request: Request) {
           estWaitMins,
           isCurrentTurn:
             booking.status === "IN_SERVICE" ||
-            booking.tokenNumber === booking.saloon.currentServingToken,
+            booking.tokenNumber <= booking.saloon.currentServingToken ||
+            (booking.status === "WAITING" && totalQueueAhead === 0 && (booking.saloon.totalChairs - booking.saloon.busyChairs > 0)),
         },
       });
     }

@@ -67,9 +67,12 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Apply search filter in-memory for bilingual Bangla and English matching
+    // Apply search filter in-memory for bilingual Bangla, English and Salon ID/Code matching
     if (search) {
+      const cleanSearch = search.replace(/^[#\s]+/, "");
       saloons = saloons.filter((s) => {
+        const salonCode = (s as any).code || "";
+        const matchCode = salonCode.toLowerCase().includes(cleanSearch);
         const matchName =
           s.nameBn.toLowerCase().includes(search) ||
           s.nameEn.toLowerCase().includes(search) ||
@@ -79,7 +82,7 @@ export async function GET(request: Request) {
             srv.nameBn.toLowerCase().includes(search) ||
             srv.nameEn.toLowerCase().includes(search)
         );
-        return matchName || matchService;
+        return matchCode || matchName || matchService;
       });
     }
 
@@ -105,6 +108,7 @@ export async function GET(request: Request) {
 
       return {
         id: s.id,
+        code: (s as any).code || null,
         slug: s.slug,
         nameBn: s.nameBn,
         nameEn: s.nameEn,

@@ -83,6 +83,7 @@ model User {
 
 model Saloon {
   id                  String          @id @default(uuid())
+  code                String?         @unique
   ownerId             String
   owner               User            @relation("OwnerSaloons", fields: [ownerId], references: [id], onDelete: Cascade)
   slug                String          @unique
@@ -113,6 +114,7 @@ model Saloon {
 
   @@index([ownerId])
   @@index([slug])
+  @@index([code])
   @@index([status, category, isAc])
 }
 

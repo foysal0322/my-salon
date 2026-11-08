@@ -1,0 +1,10 @@
+{
+  "remote.autoForwardPorts": true,
+  "remote.portsAttributes": {
+    "3000": {
+      "label": "AmarSaloon Dev Server",
+      "onAutoForward": "notify"
+    }
+  }
+}
+

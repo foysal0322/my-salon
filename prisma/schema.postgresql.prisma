@@ -85,6 +85,7 @@ model User {
 
 model Saloon {
   id                 String          @id @default(uuid())
+  code               String?         @unique @db.VarChar(20)
   ownerId            String
   owner              User            @relation("OwnerSaloons", fields: [ownerId], references: [id])
   slug               String          @unique @db.VarChar(80)
@@ -115,6 +116,7 @@ model Saloon {
 
   @@index([ownerId])
   @@index([slug])
+  @@index([code])
   @@index([status, category, isAc])
 }
 

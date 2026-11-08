@@ -6,214 +6,248 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const ownerId = searchParams.get("ownerId");
+    const saloonId = searchParams.get("saloonId") || searchParams.get("id");
 
-    if (!ownerId) {
-      return NextResponse.json(
-        { error: "মালিকের আইডি প্রয়োজন।" },
-        { status: 400 }
-      );
-    }
+      if (!ownerId && !saloonId) {
+        return NextResponse.json(
+          { error: "মালিক অথবা সেলুনের আইডি প্রয়োজন।" },
+          { status: 400 }
+        );
+      }
 
-    const saloons = await prisma.saloon.findMany({
-      where: { ownerId },
-      include: {
-        _count: {
-          select: {
-            services: true,
-            bookings: true,
+      const whereClause: any = {};
+      if (saloonId) whereClause.id = saloonId;
+      if (ownerId) whereClause.ownerId = ownerId;
+
+      const saloons = await prisma.saloon.findMany({
+        where: whereClause,
+        include: {
+          _count: {
+            select: {
+              services: true,
+              bookings: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+      });
 
-    return NextResponse.json({ saloons });
-  } catch (error: any) {
-    console.error("Owner saloons fetch error:", error);
-    return NextResponse.json(
-      { error: "সেলুনের তালিকা লোড করতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const {
-      ownerId,
-      nameBn,
-      nameEn,
-      category = "GENTS",
-      isAc = false,
-      address,
-      phone,
-      totalChairs = 3,
-      latitude = 23.7461,
-      longitude = 90.3742,
-      coverImage,
-    } = body;
-
-    if (!ownerId || !nameBn || !nameEn || !address || !phone) {
+      return NextResponse.json({ saloons, saloon: saloons[0] || null });
+    } catch (error: any) {
+      console.error("Owner saloons fetch error:", error);
       return NextResponse.json(
-        { error: "সেলুনের নাম (বাংলা ও ইংরেজি), ঠিকানা এবং মোবাইল নম্বর দিন।" },
-        { status: 400 }
+        { error: "সেলুনের তালিকা লোড করতে সমস্যা হয়েছে।" },
+        { status: 500 }
       );
     }
+  }
 
-    // Generate unique slug from English name
-    const baseSlug = nameEn
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const slug = `${baseSlug}-${randomSuffix}`;
-
-    const now = new Date();
-    // Rule FR-SUB-01: 30-Day Free Trial
-    const trialEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-    const initialChairStates = Array.from({ length: Number(totalChairs) }, (_, i) => ({
-      chairNo: i + 1,
-      isBusy: false,
-    }));
-
-    const salon = await prisma.saloon.create({
-      data: {
+export async function POST(request: Request) {
+    try {
+      const body = await request.json();
+      const {
         ownerId,
-        slug,
+        nameBn,
+        nameEn,
+        category = "GENTS",
+        isAc = false,
+        address,
+        phone,
+        totalChairs = 3,
+        latitude = 23.7461,
+        longitude = 90.3742,
+        coverImage,
+      } = body;
+
+      if (!ownerId || !nameBn || !nameEn || !address || !phone) {
+        return NextResponse.json(
+          { error: "সেলুনের নাম (বাংলা ও ইংরেজি), ঠিকানা এবং মোবাইল নম্বর দিন।" },
+          { status: 400 }
+        );
+      }
+
+      // Generate unique slug from English name
+      const baseSlug = nameEn
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const slug = `${baseSlug}-${randomSuffix}`;
+
+      // Generate unique minimum 4-digit code (e.g. 1001, 1002, ...)
+      let code = body.code ? String(body.code).trim() : null;
+      if (code) {
+        if (!/^\d{4,}$/.test(code)) {
+          return NextResponse.json(
+            { error: "সেলুন আইডি অন্তত ৪ ডিজিটের সংখ্যা হতে হবে (যেমন: 1001)।" },
+            { status: 400 }
+          );
+        }
+        const existing = await prisma.saloon.findFirst({ where: { code } as any });
+        if (existing) {
+          return NextResponse.json(
+            { error: "এই সেলুন আইডি ইতিমধ্যেই ব্যবহৃত হয়েছে। অনুগ্রহ করে অন্য আইডি দিন।" },
+            { status: 400 }
+          );
+        }
+      } else {
+        const allSalons = await prisma.saloon.findMany({ select: { code: true } as any });
+        let maxCode = 1000;
+        for (const s of allSalons) {
+          if ((s as any).code) {
+            const num = parseInt((s as any).code, 10);
+            if (!isNaN(num) && num > maxCode) maxCode = num;
+          }
+        }
+        code = (maxCode + 1).toString();
+      }
+
+      const now = new Date();
+      // Rule FR-SUB-01: 30-Day Free Trial
+      const trialEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      const initialChairStates = Array.from({ length: Number(totalChairs) }, (_, i) => ({
+        chairNo: i + 1,
+        isBusy: false,
+      }));
+
+      const salon = await prisma.saloon.create({
+        data: {
+          ownerId,
+          code,
+          slug,
+          nameBn,
+          nameEn,
+          category,
+          isAc: Boolean(isAc),
+          address,
+          phone,
+          totalChairs: Number(totalChairs),
+          busyChairs: 0,
+          chairStates: JSON.stringify(initialChairStates),
+          manualQueueCount: 0,
+          currentServingToken: 0,
+          status: "ACTIVE",
+          trialEndsAt,
+          latitude: Number(latitude),
+          longitude: Number(longitude),
+          coverImage:
+            coverImage ||
+            "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&auto=format&fit=crop&q=60",
+        },
+      });
+
+      // Seed default common services for rapid setup
+      const defaultServices = [
+        { nameBn: "চুল কাটা", nameEn: "Hair Cutting", price: 200, durationMins: 25 },
+        { nameBn: "দাড়ি শেভ ও ট্রিম", nameEn: "Beard Shave & Trim", price: 120, durationMins: 15 },
+        { nameBn: "হেড ম্যাসাজ", nameEn: "Head Massage", price: 250, durationMins: 20 },
+      ];
+
+      for (const s of defaultServices) {
+        await prisma.salonService.create({
+          data: {
+            saloonId: salon.id,
+            nameBn: s.nameBn,
+            nameEn: s.nameEn,
+            price: s.price,
+            durationMins: s.durationMins,
+          },
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "নতুন সেলুন শাখা সফলভাবে তৈরি হয়েছে!",
+        salon,
+      });
+    } catch (error: any) {
+      console.error("Owner salon creation error:", error);
+      return NextResponse.json(
+        { error: "সেলুন তৈরি করতে সমস্যা হয়েছে।" },
+        { status: 500 }
+      );
+    }
+  }
+
+  export async function PUT(request: Request) {
+    try {
+      const body = await request.json();
+      const {
+        id,
         nameBn,
         nameEn,
         category,
-        isAc: Boolean(isAc),
+        isAc,
         address,
         phone,
-        totalChairs: Number(totalChairs),
-        busyChairs: 0,
-        chairStates: JSON.stringify(initialChairStates),
-        manualQueueCount: 0,
-        currentServingToken: 0,
-        status: "ACTIVE",
-        trialEndsAt,
-        latitude: Number(latitude),
-        longitude: Number(longitude),
-        coverImage:
-          coverImage ||
-          "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&auto=format&fit=crop&q=60",
-      },
-    });
+        totalChairs,
+        latitude,
+        longitude,
+        coverImage,
+      } = body;
 
-    // Seed default common services for rapid setup
-    const defaultServices = [
-      { nameBn: "চুল কাটা", nameEn: "Hair Cutting", price: 200, durationMins: 25 },
-      { nameBn: "দাড়ি শেভ ও ট্রিম", nameEn: "Beard Shave & Trim", price: 120, durationMins: 15 },
-      { nameBn: "হেড ম্যাসাজ", nameEn: "Head Massage", price: 250, durationMins: 20 },
-    ];
+      if (!id) {
+        return NextResponse.json(
+          { error: "সেলুন আইডি প্রদান করুন।" },
+          { status: 400 }
+        );
+      }
 
-    for (const s of defaultServices) {
-      await prisma.salonService.create({
+      const currentSalon = await prisma.saloon.findUnique({
+        where: { id },
+      });
+
+      if (!currentSalon) {
+        return NextResponse.json(
+          { error: "সেলুন খুঁজে পাওয়া যায়নি।" },
+          { status: 404 }
+        );
+      }
+
+      // If total chairs changed, re-sync chairStates array
+      let updatedChairStates = currentSalon.chairStates;
+      const newTotal = totalChairs ? Number(totalChairs) : currentSalon.totalChairs;
+      if (newTotal !== currentSalon.totalChairs) {
+        let currentStates: any[] = [];
+        try {
+          currentStates = JSON.parse(currentSalon.chairStates);
+        } catch (e) { }
+
+        const newStates = Array.from({ length: newTotal }, (_, i) => {
+          const existing = currentStates.find((c) => c.chairNo === i + 1);
+          return existing || { chairNo: i + 1, isBusy: false };
+        });
+        updatedChairStates = JSON.stringify(newStates);
+      }
+
+      const updated = await prisma.saloon.update({
+        where: { id },
         data: {
-          saloonId: salon.id,
-          nameBn: s.nameBn,
-          nameEn: s.nameEn,
-          price: s.price,
-          durationMins: s.durationMins,
+          nameBn: nameBn ?? currentSalon.nameBn,
+          nameEn: nameEn ?? currentSalon.nameEn,
+          category: category ?? currentSalon.category,
+          isAc: isAc !== undefined ? Boolean(isAc) : currentSalon.isAc,
+          address: address ?? currentSalon.address,
+          phone: phone ?? currentSalon.phone,
+          totalChairs: newTotal,
+          chairStates: updatedChairStates,
+          latitude: latitude !== undefined ? Number(latitude) : currentSalon.latitude,
+          longitude: longitude !== undefined ? Number(longitude) : currentSalon.longitude,
+          coverImage: coverImage ?? currentSalon.coverImage,
         },
       });
-    }
 
-    return NextResponse.json({
-      success: true,
-      message: "নতুন সেলুন শাখা সফলভাবে তৈরি হয়েছে!",
-      salon,
-    });
-  } catch (error: any) {
-    console.error("Owner salon creation error:", error);
-    return NextResponse.json(
-      { error: "সেলুন তৈরি করতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(request: Request) {
-  try {
-    const body = await request.json();
-    const {
-      id,
-      nameBn,
-      nameEn,
-      category,
-      isAc,
-      address,
-      phone,
-      totalChairs,
-      latitude,
-      longitude,
-      coverImage,
-    } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "সেলুন আইডি প্রদান করুন।" },
-        { status: 400 }
-      );
-    }
-
-    const currentSalon = await prisma.saloon.findUnique({
-      where: { id },
-    });
-
-    if (!currentSalon) {
-      return NextResponse.json(
-        { error: "সেলুন খুঁজে পাওয়া যায়নি।" },
-        { status: 404 }
-      );
-    }
-
-    // If total chairs changed, re-sync chairStates array
-    let updatedChairStates = currentSalon.chairStates;
-    const newTotal = totalChairs ? Number(totalChairs) : currentSalon.totalChairs;
-    if (newTotal !== currentSalon.totalChairs) {
-      let currentStates: any[] = [];
-      try {
-        currentStates = JSON.parse(currentSalon.chairStates);
-      } catch (e) {}
-
-      const newStates = Array.from({ length: newTotal }, (_, i) => {
-        const existing = currentStates.find((c) => c.chairNo === i + 1);
-        return existing || { chairNo: i + 1, isBusy: false };
+      return NextResponse.json({
+        success: true,
+        message: "সেলুনের তথ্য সফলভাবে আপডেট হয়েছে।",
+        salon: updated,
       });
-      updatedChairStates = JSON.stringify(newStates);
+    } catch (error: any) {
+      console.error("Salon update error:", error);
+      return NextResponse.json(
+        { error: "সেলুন আপডেট করতে সমস্যা হয়েছে।" },
+        { status: 500 }
+      );
     }
-
-    const updated = await prisma.saloon.update({
-      where: { id },
-      data: {
-        nameBn: nameBn ?? currentSalon.nameBn,
-        nameEn: nameEn ?? currentSalon.nameEn,
-        category: category ?? currentSalon.category,
-        isAc: isAc !== undefined ? Boolean(isAc) : currentSalon.isAc,
-        address: address ?? currentSalon.address,
-        phone: phone ?? currentSalon.phone,
-        totalChairs: newTotal,
-        chairStates: updatedChairStates,
-        latitude: latitude !== undefined ? Number(latitude) : currentSalon.latitude,
-        longitude: longitude !== undefined ? Number(longitude) : currentSalon.longitude,
-        coverImage: coverImage ?? currentSalon.coverImage,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "সেলুনের তথ্য সফলভাবে আপডেট হয়েছে।",
-      salon: updated,
-    });
-  } catch (error: any) {
-    console.error("Salon update error:", error);
-    return NextResponse.json(
-      { error: "সেলুন আপডেট করতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
   }
-}

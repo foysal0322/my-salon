@@ -13,9 +13,7 @@ import {
   Megaphone,
   CheckCircle2,
   Clock,
-  Sparkles,
   AlertTriangle,
-  Receipt,
   SkipForward,
   UserX,
   RefreshCw,
@@ -25,6 +23,7 @@ import {
   BellRing,
   Play,
 } from "lucide-react";
+import { sendBrowserNotification } from "@/lib/notifications";
 
 export default function OwnerDashboardPage() {
   const router = useRouter();
@@ -88,6 +87,13 @@ export default function OwnerDashboardPage() {
               ? `🔔 নতুন সিরিয়াল যুক্ত হয়েছে: #${String(latest.tokenNumber).padStart(3, "0")} (${latest.guestName})`
               : `🔔 New Queue Booking: #${String(latest.tokenNumber).padStart(3, "0")} (${latest.guestName})`;
           setNewBookingAlert(alertMsg);
+          sendBrowserNotification(
+            lang === "bn" ? "🔔 নতুন কাস্টমার সিরিয়াল নিয়েছেন!" : "🔔 New Live Queue Booking!",
+            {
+              body: alertMsg,
+              url: "/owner/dashboard",
+            }
+          );
           setTimeout(() => setNewBookingAlert(null), 6000);
         }
         prevWaitingCount.current = waiting.length;
@@ -683,39 +689,6 @@ export default function OwnerDashboardPage() {
               <Plus className="w-6 h-6" />
             </button>
           </div>
-        </section>
-
-        {/* QUICK LEDGER ENTRY & QR SHORTCUTS */}
-        <section className="grid grid-cols-2 gap-3">
-          <Link
-            href="/owner/ledger"
-            className="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-teal-400 transition flex items-center gap-2.5"
-          >
-            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
-              <Receipt className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-900">{t.navLedger}</p>
-              <p className="text-[10px] text-slate-500">
-                {lang === "bn" ? "আয়-ব্যয়ের হিসাব" : "Income & Sales"}
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            href="/owner/profile"
-            className="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs hover:border-purple-400 transition flex items-center gap-2.5"
-          >
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-900">{t.navProfile}</p>
-              <p className="text-[10px] text-slate-500">
-                {lang === "bn" ? "A4 QR ও সাবস্ক্রিপশন" : "QR & Package"}
-              </p>
-            </div>
-          </Link>
         </section>
       </div>
     </AppShell>

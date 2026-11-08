@@ -16,12 +16,15 @@ import {
 } from "lucide-react";
 
 const PRESET_TEMPLATES = [
-  { nameBn: "চুল কাটা (Hair Cut)", nameEn: "Hair Cut", price: 200, durationMins: 25 },
-  { nameBn: "দাড়ি শেভ ও ট্রিম (Beard Trim)", nameEn: "Beard Shave", price: 120, durationMins: 15 },
-  { nameBn: "গোল্ডেন ফেসিয়াল (Facial)", nameEn: "Facial", price: 600, durationMins: 40 },
-  { nameBn: "হেড ম্যাসাজ ও অয়েলিং", nameEn: "Head Massage", price: 250, durationMins: 20 },
-  { nameBn: "ম্যানিকিউর ও পেডিকিউর", nameEn: "Mani-Pedi", price: 800, durationMins: 45 },
-  { nameBn: "চুল কালার ও ডাই", nameEn: "Hair Color", price: 500, durationMins: 35 },
+  { nameBn: "চুল কাটা (Hair Cut)", nameEn: "Hair Cut", price: 200, durationMins: 25, details: "স্ট্যান্ডার্ড হেয়ারকাট ও ফিনিশিং" },
+  { nameBn: "দাড়ি শেভ ও ট্রিম (Beard Shave)", nameEn: "Beard Shave & Trim", price: 120, durationMins: 15, details: "ফোম বা ক্রিম শেভ ও আফটারশেভ" },
+  { nameBn: "গোল্ডেন ফেসিয়াল (Facial)", nameEn: "Facial Care", price: 600, durationMins: 40, details: "ডিপ ক্লিনজিং ও গোল্ডেন ফেসিয়াল" },
+  { nameBn: "ফেস প্যাক ও স্ক্রাব (Face Pack)", nameEn: "Face Pack & Scrub", price: 350, durationMins: 20, details: "ন্যাচারাল ভেষজ ফেস প্যাক" },
+  { nameBn: "হেয়ার স্পা ও হেড ম্যাসাজ (Spa)", nameEn: "Hair Spa & Massage", price: 450, durationMins: 30, details: "হট অয়েল ও নারিশিং হেয়ার স্পা" },
+  { nameBn: "ম্যানিকিউর (Manicure)", nameEn: "Manicure", price: 400, durationMins: 25, details: "হাতের নখ ও স্কিন কেয়ার" },
+  { nameBn: "পেডিকিউর (Pedicure)", nameEn: "Pedicure", price: 500, durationMins: 30, details: "পায়ের যত্ন ও ডেড স্কিন রিমুভ" },
+  { nameBn: "চুল কালার ও ডাই (Hair Color)", nameEn: "Hair Color & Dye", price: 500, durationMins: 35, details: "অ্যামোনিয়া ফ্রি হেয়ার কালার" },
+  { nameBn: "ব্রাইডাল / বর মেকআপ (Bridal Makeup)", nameEn: "Bridal / Groom Makeup", price: 2500, durationMins: 60, details: "ফুল ফেস প্রিমিয়াম মেকআপ প্যাকেজ" },
 ];
 
 export default function OwnerServicesPage() {
@@ -98,6 +101,7 @@ export default function OwnerServicesPage() {
     setNameEn(p.nameEn);
     setPrice(p.price.toString());
     setDurationMins(p.durationMins.toString());
+    setDetails(p.details || "");
     setShowAddModal(true);
   };
 
@@ -248,22 +252,26 @@ export default function OwnerServicesPage() {
 
         {/* MODAL: ADD / EDIT SERVICE */}
         {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs animate-in fade-in">
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-xs animate-in fade-in p-0 sm:p-4">
             <div className="fixed inset-0" onClick={() => setShowAddModal(false)} />
-            <div className="w-full max-w-[480px] bg-white rounded-t-3xl p-5 shadow-2xl relative z-10 animate-in slide-in-from-bottom">
+            <div className="w-full max-w-[480px] bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl relative z-10 animate-in slide-in-from-bottom max-h-[85vh] overflow-y-auto pb-12 sm:pb-6">
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="font-bold text-sm text-slate-900">
-                  {lang === "bn" ? "নতুন সার্ভিস যুক্ত করুন" : "Add New Service"}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <Scissors className="w-4 h-4 text-teal-700" />
+                  <h3 className="font-bold text-sm text-slate-900">
+                    {lang === "bn" ? "নতুন সার্ভিস যুক্ত করুন" : "Add New Service"}
+                  </h3>
+                </div>
                 <button
+                  type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1 text-lg font-bold cursor-pointer"
+                  className="text-slate-400 hover:text-slate-600 p-1.5 text-lg font-bold rounded-lg hover:bg-slate-100 transition cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleSubmitService} className="space-y-3 mt-3">
+              <form onSubmit={handleSubmitService} className="space-y-3.5 mt-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     {lang === "bn" ? "সার্ভিসের নাম (বাংলা)" : "Service Name (Bangla)"} *
@@ -274,6 +282,19 @@ export default function OwnerServicesPage() {
                     value={nameBn}
                     onChange={(e) => setNameBn(e.target.value)}
                     placeholder="যেমন: চুল কাটা ও শ্যাম্পু"
+                    className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {lang === "bn" ? "সার্ভিসের নাম (English)" : "Service Name (English)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={nameEn}
+                    onChange={(e) => setNameEn(e.target.value)}
+                    placeholder="e.g. Hair Cut & Shampoo"
                     className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
                   />
                 </div>
@@ -290,7 +311,7 @@ export default function OwnerServicesPage() {
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="২৫০"
-                      className="w-full text-sm font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none"
+                      className="w-full text-sm font-mono font-bold bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
                     />
                   </div>
 
@@ -326,9 +347,14 @@ export default function OwnerServicesPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-3 rounded-xl font-bold text-sm bg-[#0D9488] hover:bg-[#115E59] text-white shadow-md transition cursor-pointer disabled:opacity-50"
+                    className="w-full py-3.5 rounded-xl font-bold text-sm bg-[#0D9488] hover:bg-[#115E59] active:scale-[0.99] text-white shadow-lg shadow-teal-900/20 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    {submitting ? t.loading : t.save}
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>
+                      {submitting
+                        ? (lang === "bn" ? "সংরক্ষণ করা হচ্ছে..." : "Saving...")
+                        : (lang === "bn" ? "সার্ভিস সংরক্ষণ করুন" : "Save Service")}
+                    </span>
                   </button>
                 </div>
               </form>

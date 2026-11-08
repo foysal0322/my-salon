@@ -51,13 +51,68 @@ export default function RootLayout({
     <html
       lang="bn"
       className={`${hindSiliguri.variable} ${plusJakartaSans.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var isBad = function(name) {
+                    return name && (name === 'bis_skin_checked' || name === 'bis_register' || name.indexOf('__processed_') === 0 || name.indexOf('bis_') === 0);
+                  };
+                  var origSetAttr = Element.prototype.setAttribute;
+                  Element.prototype.setAttribute = function(name, val) {
+                    if (isBad(name)) return;
+                    return origSetAttr.apply(this, arguments);
+                  };
+                  var clean = function(node) {
+                    if (!node || node.nodeType !== 1) return;
+                    for (var i = node.attributes.length - 1; i >= 0; i--) {
+                      var attr = node.attributes[i];
+                      if (attr && isBad(attr.name)) {
+                        node.removeAttribute(attr.name);
+                      }
+                    }
+                  };
+                  var observer = new MutationObserver(function(mutations) {
+                    for (var i = 0; i < mutations.length; i++) {
+                      var m = mutations[i];
+                      if (m.type === 'attributes' && isBad(m.attributeName)) {
+                        m.target.removeAttribute(m.attributeName);
+                      } else if (m.type === 'childList') {
+                        for (var j = 0; j < m.addedNodes.length; j++) {
+                          var n = m.addedNodes[j];
+                          clean(n);
+                          if (n.querySelectorAll) {
+                            var children = n.querySelectorAll('*');
+                            for (var k = 0; k < children.length; k++) {
+                              clean(children[k]);
+                            }
+                          }
+                        }
+                      }
+                    }
+                  });
+                  observer.observe(document.documentElement, {
+                    attributes: true,
+                    subtree: true,
+                    childList: true
+                  });
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className="min-h-full flex flex-col font-sans bg-[#FAF9F6] text-[#0F172A]"
         style={{
           fontFamily:
             "var(--font-hind-siliguri), var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         }}
+        suppressHydrationWarning
       >
         <AppProvider>{children}</AppProvider>
       </body>
