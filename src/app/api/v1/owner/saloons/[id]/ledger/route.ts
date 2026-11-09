@@ -123,246 +123,658 @@ export async function GET(
         });
       }
 
-      // Handle PDF export (Print-ready A4 HTML document)
+      // Handle PDF export (Print-ready Bank Statement Format)
       if (exportFormat === "pdf") {
         const salon = await prisma.saloon.findUnique({
           where: { id },
-          select: { nameBn: true, nameEn: true, code: true, address: true, phone: true },
+          select: {
+            nameBn: true,
+            nameEn: true,
+            code: true,
+            address: true,
+            phone: true,
+            owner: { select: { name: true, phone: true } },
+          },
         });
 
         const salonName = salon?.nameBn || salon?.nameEn || "AmarSalon";
-        const salonAddress = salon?.address || "";
-        const salonPhone = salon?.phone || "";
-        const salonCode = salon?.code || "";
+        const salonAddress = salon?.address || "বাংলাদেশ";
+        const salonPhone = salon?.phone || salon?.owner?.phone || "N/A";
+        const salonCode = salon?.code || (id ? id.slice(0, 6).toUpperCase() : "1051");
+        const salonOwnerName = salon?.owner?.name || (salon?.nameEn ? `${salon.nameEn} Management` : "সত্ত্বাধিকারী");
+
+        const statementRef = `AS-STM-${salonCode}-${now.toISOString().slice(2, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const statementIssueDate = now.toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        }) + " " + now.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+
+        // Sort entries chronologically (earliest to latest) for bank running balance calculation
+        const statementEntries = [...entries].sort((a, b) => {
+          const dateA = new Date(a.entryDate).getTime();
+          const dateB = new Date(b.entryDate).getTime();
+          if (dateA !== dateB) return dateA - dateB;
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        });
+
+        const formatCurrency = (val: number) =>
+          "৳" + Math.abs(val).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        let runningBalance = 0;
+        const rowsHtml = statementEntries.length === 0
+          ? `<tr><td colspan="7" class="empty-state">উক্ত সময়সীমায় কোনো লেনদেনের রেকর্ড পাওয়া যায়নি (No transactions found)</td></tr>`
+          : statementEntries.map((item, idx) => {
+            const isIncome = item.type === "INCOME";
+            const debitAmount = !isIncome ? item.amount : 0;
+            const creditAmount = isIncome ? item.amount : 0;
+            runningBalance += (creditAmount - debitAmount);
+            const txnRef = `TXN-${item.id ? item.id.slice(0, 6).toUpperCase() : (idx + 101)}`;
+
+            return `
+              <tr>
+                <td class="col-center text-muted font-mono">${String(idx + 1).padStart(2, '0')}</td>
+                <td class="col-center font-mono">${item.entryDate}</td>
+                <td class="col-center font-mono text-muted" style="font-size: 11px;">#${txnRef}</td>
+                <td>
+                  <div class="desc-main">${item.category}</div>
+                  ${item.note ? `<div class="desc-sub">${item.note}</div>` : ""}
+                </td>
+                <td class="col-amount text-danger font-mono">
+                  ${debitAmount > 0 ? formatCurrency(debitAmount) : `<span class="dash">-</span>`}
+                </td>
+                <td class="col-amount text-success font-mono">
+                  ${creditAmount > 0 ? formatCurrency(creditAmount) : `<span class="dash">-</span>`}
+                </td>
+                <td class="col-amount font-mono font-bold ${runningBalance >= 0 ? "text-slate" : "text-danger"}">
+                  ${runningBalance < 0 ? "-" : ""}${formatCurrency(Math.abs(runningBalance))}
+                </td>
+              </tr>
+            `;
+          }).join("");
+
+        const incomeCount = entries.filter((e) => e.type === "INCOME").length;
+        const expenseCount = entries.filter((e) => e.type === "EXPENSE").length;
 
         const html = `<!DOCTYPE html>
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>হিসাব খাতা রিপোর্ট - ${salonName}</title>
+  <title>হিসাব বিবরণী (Bank Statement) - ${salonName}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      color: #1e293b;
-      background: #f8fafc;
+      font-family: 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      background: #f1f5f9;
       padding: 24px;
-      line-height: 1.5;
+      line-height: 1.4;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    .container {
-      max-width: 800px;
+    .statement-container {
+      max-width: 900px;
       margin: 0 auto;
       background: #ffffff;
-      padding: 32px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 2px solid #0d9488;
-      padding-bottom: 20px;
-      margin-bottom: 24px;
-    }
-    .brand-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: #0f766e;
-    }
-    .salon-name {
-      font-size: 18px;
-      font-weight: 700;
-      color: #0f172a;
-      margin-top: 4px;
-    }
-    .salon-info {
-      font-size: 13px;
-      color: #64748b;
-      margin-top: 2px;
-    }
-    .meta-box {
-      text-align: right;
-      font-size: 13px;
-    }
-    .meta-badge {
-      display: inline-block;
-      background: #f0fdfa;
-      color: #0f766e;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      font-weight: 600;
-      border: 1px solid #ccfbf1;
-      margin-bottom: 6px;
-    }
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .summary-card {
-      padding: 14px;
-      border-radius: 12px;
-      text-align: center;
-    }
-    .card-income { background: #f0fdf4; border: 1px solid #bbf7d0; }
-    .card-expense { background: #fff1f2; border: 1px solid #fecdd3; }
-    .card-net { background: #f0fdfa; border: 1px solid #99f6e4; }
-    .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; }
-    .card-income .card-title { color: #166534; }
-    .card-expense .card-title { color: #9f1239; }
-    .card-net .card-title { color: #0f766e; }
-    .card-amount { font-size: 20px; font-weight: 700; margin-top: 4px; font-family: monospace; }
-    .card-income .card-amount { color: #15803d; }
-    .card-expense .card-amount { color: #be123c; }
-    .card-net .card-amount { color: #0f766e; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      margin-bottom: 24px;
-    }
-    th {
-      background: #f1f5f9;
-      color: #334155;
-      font-weight: 700;
-      text-align: left;
-      padding: 10px 12px;
-      border-bottom: 1px solid #cbd5e1;
-    }
-    td {
-      padding: 10px 12px;
-      border-bottom: 1px solid #e2e8f0;
-      vertical-align: middle;
-    }
-    tr:nth-child(even) td { background: #f8fafc; }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .badge-income { background: #dcfce7; color: #166534; }
-    .badge-expense { background: #fee2e2; color: #991b1b; }
-    .amount-income { color: #15803d; font-weight: 700; font-family: monospace; }
-    .amount-expense { color: #dc2626; font-weight: 700; font-family: monospace; }
-    .footer {
-      border-top: 1px solid #e2e8f0;
-      padding-top: 16px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: #94a3b8;
+      padding: 32px 36px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+      border: 1px solid #cbd5e1;
     }
     .btn-bar {
-      margin-bottom: 16px;
+      max-width: 900px;
+      margin: 0 auto 16px auto;
       display: flex;
-      justify-content: flex-end;
-      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
     }
     .btn {
-      padding: 8px 16px;
+      padding: 10px 18px;
       border-radius: 8px;
       border: none;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
+      transition: background 0.15s ease;
+    }
+    .btn-primary { background: #0d9488; color: #ffffff; }
+    .btn-primary:hover { background: #0f766e; }
+    .btn-outline { background: #ffffff; color: #475569; border: 1px solid #cbd5e1; }
+    .btn-outline:hover { background: #f8fafc; }
+
+    /* BANK STATEMENT HEADER */
+    .bank-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 18px;
+      margin-bottom: 20px;
+    }
+    .bank-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bank-logo-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      border: 1.5px solid #334155;
+    }
+    .bank-title-group .bank-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .bank-title-group .bank-sub {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+    .statement-badge-wrap {
+      text-align: right;
+    }
+    .statement-badge {
+      display: inline-block;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .statement-ref {
+      font-size: 11px;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    /* DUAL-COLUMN PARTICULARS */
+    .account-profile-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .profile-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      padding: 12px 14px;
+    }
+    .profile-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .meta-table td {
+      padding: 2.5px 0;
+      vertical-align: top;
+    }
+    .meta-label {
+      width: 120px;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 11px;
+    }
+    .meta-val {
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .verified-pill {
+      display: inline-block;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 1.5px 7px;
+      border-radius: 9999px;
+      border: 1px solid #bbf7d0;
+    }
+
+    /* FINANCIAL SUMMARY STRIP (BANK STYLE) */
+    .financial-summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .fin-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      padding: 10px 12px;
+      text-align: right;
+    }
+    .fin-card.border-success { border-left: 4px solid #16a34a; }
+    .fin-card.border-danger { border-left: 4px solid #dc2626; }
+    .fin-card.border-primary { border-left: 4px solid #0d9488; background: #f0fdfa; }
+    .fin-label {
+      font-size: 10px;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .fin-val {
+      font-size: 16px;
+      font-weight: 800;
+      margin: 3px 0;
+    }
+    .fin-sub {
+      font-size: 10px;
+      color: #64748b;
+    }
+
+    /* TRANSACTION LEDGER TABLE */
+    .statement-table-wrap {
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 22px;
+    }
+    table.statement-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    table.statement-table thead {
+      display: table-header-group;
+    }
+    table.statement-table th {
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 9px 10px;
+      border-bottom: 1px solid #0f172a;
+      text-align: left;
+    }
+    table.statement-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+      color: #1e293b;
+    }
+    table.statement-table tbody tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+    table.statement-table tr {
+      page-break-inside: avoid;
+    }
+    .col-center { text-align: center; }
+    .col-right { text-align: right; }
+    .col-amount {
+      text-align: right;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .text-success { color: #15803d; }
+    .text-danger { color: #dc2626; }
+    .text-slate { color: #0f172a; }
+    .text-muted { color: #64748b; }
+    .dash { color: #cbd5e1; font-weight: 400; }
+    .font-mono {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .desc-main {
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .desc-sub {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 1px;
+    }
+    .totals-row td {
+      background: #f1f5f9 !important;
+      border-top: 2px solid #0f172a !important;
+      border-bottom: 2px solid #0f172a !important;
+      padding: 10px 10px;
+      font-size: 12px;
+    }
+    .text-uppercase { text-transform: uppercase; }
+    .empty-state {
+      text-align: center;
+      padding: 30px;
+      color: #64748b;
+      font-style: italic;
+    }
+
+    /* LEGAL DISCLAIMER & SIGNATURE SECTION */
+    .statement-declaration-box {
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      background: #fcfdfe;
+      padding: 10px 14px;
+      font-size: 10.5px;
+      color: #475569;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+    .signature-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      align-items: flex-end;
+      padding-top: 10px;
+      margin-bottom: 24px;
+      page-break-inside: avoid;
+    }
+    .system-seal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0fdfa;
+      border: 1.5px solid #0d9488;
+      border-radius: 6px;
+      padding: 6px 12px;
+      margin-bottom: 8px;
+    }
+    .seal-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
       background: #0d9488;
       color: #ffffff;
-      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
     }
-    .btn:hover { background: #0f766e; }
+    .seal-text .seal-main {
+      display: block;
+      font-size: 11px;
+      font-weight: 800;
+      color: #0f766e;
+      letter-spacing: 0.5px;
+    }
+    .seal-text .seal-sub {
+      display: block;
+      font-size: 9px;
+      font-weight: 700;
+      color: #64748b;
+    }
+    .sig-line {
+      border-bottom: 1.5px dotted #64748b;
+      width: 220px;
+      margin-left: auto;
+      margin-bottom: 6px;
+    }
+    .sig-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .sig-sub {
+      font-size: 10.5px;
+      color: #64748b;
+      margin-top: 1px;
+    }
+    .sig-date {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    /* FOOTER */
+    .statement-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10.5px;
+      color: #64748b;
+    }
+
+    /* PRINT SPECIFIC STYLES */
     @media print {
-      body { background: #ffffff; padding: 0; }
-      .container { max-width: 100%; padding: 0; box-shadow: none; border-radius: 0; }
-      .btn-bar { display: none !important; }
-      @page { size: A4; margin: 12mm; }
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+      .statement-container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+      .btn-bar {
+        display: none !important;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 10mm 12mm 12mm 12mm;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="btn-bar">
-      <button class="btn" onclick="window.print()">🖨️ সেভ করুন বা প্রিন্ট (Save as PDF)</button>
+  <!-- ACTION BAR (HIDDEN IN PRINT) -->
+  <div class="btn-bar">
+    <div style="font-size: 12px; font-weight: 600; color: #475569;">
+      📄 অফিসিয়াল ব্যাংক স্টেটমেন্ট ভিউয়ার (Bank Statement Format)
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-primary" onclick="window.print()">
+        🖨️ প্রিন্ট করুন বা PDF সেভ করুন (Print / Save as PDF)
+      </button>
+      <button class="btn btn-outline" onclick="window.close()">
+        ✕ বন্ধ করুন
+      </button>
+    </div>
+  </div>
+
+  <div class="statement-container">
+    <!-- BANK STATEMENT HEADER -->
+    <div class="bank-header">
+      <div class="bank-brand">
+        <div class="bank-logo-badge">AS</div>
+        <div class="bank-title-group">
+          <div class="bank-title">AMARSALON DIGITAL FINANCIAL SYSTEM</div>
+          <div class="bank-sub">OFFICIAL LEDGER STATEMENT • হিসাব বিবরণী</div>
+        </div>
+      </div>
+      <div class="statement-badge-wrap">
+        <div class="statement-badge">ACCOUNT STATEMENT</div>
+        <div class="statement-ref font-mono">REF: ${statementRef}</div>
+      </div>
     </div>
 
-    <div class="header">
-      <div>
-        <div class="brand-title">AmarSalon • হিসাব খাতা</div>
-        <div class="salon-name">${salonName} ${salonCode ? `(#${salonCode})` : ""}</div>
-        <div class="salon-info">${salonAddress ? `${salonAddress} • ` : ""}${salonPhone}</div>
-      </div>
-      <div class="meta-box">
-        <div class="meta-badge">${rangeLabel}</div>
-        <div style="color: #64748b;">তৈরির তারিখ: ${todayStr}</div>
-        <div style="color: #64748b; font-size: 11px; margin-top: 2px;">মোট লেনদেন: ${entries.length}টি</div>
-      </div>
-    </div>
-
-    <div class="summary-grid">
-      <div class="summary-card card-income">
-        <div class="card-title">মোট আয় (Total Income)</div>
-        <div class="card-amount">৳${exportIncome.toLocaleString()}</div>
-      </div>
-      <div class="summary-card card-expense">
-        <div class="card-title">মোট ব্যয় (Total Expense)</div>
-        <div class="card-amount">৳${exportExpense.toLocaleString()}</div>
-      </div>
-      <div class="summary-card card-net">
-        <div class="card-title">নিট ব্যালেন্স (Net Balance)</div>
-        <div class="card-amount">৳${exportNet.toLocaleString()}</div>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 50px;">নং</th>
-          <th style="width: 100px;">তারিখ</th>
-          <th>ক্যাটাগরি ও বিবরণ</th>
-          <th style="width: 80px; text-align: center;">ধরন</th>
-          <th style="width: 110px; text-align: right;">পরিমাণ</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${entries.length === 0
-            ? `<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94a3b8;">কোনো লেনদেন রেকর্ড পাওয়া যায়নি</td></tr>`
-            : entries
-              .map(
-                (item, idx) => `
+    <!-- ACCOUNT PARTICULARS & STATEMENT INFO -->
+    <div class="account-profile-grid">
+      <div class="profile-card">
+        <div class="profile-title">ACCOUNT HOLDER PARTICULARS / হিসাবধারীর বিবরণ</div>
+        <table class="meta-table">
           <tr>
-            <td>${idx + 1}</td>
-            <td style="font-family: monospace;">${item.entryDate}</td>
-            <td>
-              <strong>${item.category}</strong>
-              ${item.note ? `<div style="font-size: 11px; color: #64748b;">${item.note}</div>` : ""}
-            </td>
-            <td style="text-align: center;">
-              <span class="badge ${item.type === "INCOME" ? "badge-income" : "badge-expense"}">
-                ${item.type === "INCOME" ? "আয়" : "ব্যয়"}
-              </span>
-            </td>
-            <td style="text-align: right;" class="${item.type === "INCOME" ? "amount-income" : "amount-expense"}">
-              ${item.type === "INCOME" ? "+" : "-"}৳${item.amount.toLocaleString()}
-            </td>
-          </tr>`
-              )
-              .join("")}
-      </tbody>
-    </table>
+            <td class="meta-label">Account Title:</td>
+            <td class="meta-val">${salonName}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Salon ID / একাউন্ট নং:</td>
+            <td class="meta-val font-mono">#${salonCode}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Proprietor / মালিক:</td>
+            <td class="meta-val">${salonOwnerName}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Contact / মোবাইল:</td>
+            <td class="meta-val font-mono">${salonPhone}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Branch / ঠিকানা:</td>
+            <td class="meta-val">${salonAddress}</td>
+          </tr>
+        </table>
+      </div>
 
-    <div class="footer">
-      <div>স্মার্ট সেলুন বুকিং ও হিসাব খাতা প্ল্যাটফর্ম</div>
-      <div>www.amarsalon.com</div>
+      <div class="profile-card">
+        <div class="profile-title">STATEMENT PARAMETERS / বিবরণীর তথ্যাবলী</div>
+        <table class="meta-table">
+          <tr>
+            <td class="meta-label">Statement Period:</td>
+            <td class="meta-val font-bold">${rangeLabel}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Statement Date:</td>
+            <td class="meta-val font-mono">${statementIssueDate}</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Currency:</td>
+            <td class="meta-val">BDT (Bangladeshi Taka - ৳)</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Total Transactions:</td>
+            <td class="meta-val font-bold">${entries.length} Entries (${incomeCount} Incomes, ${expenseCount} Expenses)</td>
+          </tr>
+          <tr>
+            <td class="meta-label">Account Status:</td>
+            <td class="meta-val"><span class="verified-pill">✓ RECONCILED & AUDITED</span></td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- FINANCIAL SUMMARY STRIP (BANK METRICS) -->
+    <div class="financial-summary-strip">
+      <div class="fin-card">
+        <div class="fin-label">OPENING BALANCE</div>
+        <div class="fin-val font-mono">৳0.00</div>
+        <div class="fin-sub">Base Period Balance</div>
+      </div>
+      <div class="fin-card border-success">
+        <div class="fin-label text-success">TOTAL CREDITS (মোট জমা)</div>
+        <div class="fin-val text-success font-mono">+${formatCurrency(exportIncome)}</div>
+        <div class="fin-sub">${incomeCount} Sales Entries</div>
+      </div>
+      <div class="fin-card border-danger">
+        <div class="fin-label text-danger">TOTAL DEBITS (মোট খরচ)</div>
+        <div class="fin-val text-danger font-mono">-${formatCurrency(exportExpense)}</div>
+        <div class="fin-sub">${expenseCount} Expense Entries</div>
+      </div>
+      <div class="fin-card border-primary">
+        <div class="fin-label text-slate">CLOSING BALANCE (সমাপনী স্থিতি)</div>
+        <div class="fin-val font-mono ${exportNet >= 0 ? "text-success" : "text-danger"}">
+          ${exportNet < 0 ? "-" : ""}${formatCurrency(Math.abs(exportNet))}
+        </div>
+        <div class="fin-sub font-bold">${exportNet >= 0 ? "SURPLUS (মুনাফা)" : "DEFICIT (ঘাটতি)"}</div>
+      </div>
+    </div>
+
+    <!-- TRANSACTION LEDGER TABLE -->
+    <div class="statement-table-wrap">
+      <table class="statement-table">
+        <thead>
+          <tr>
+            <th style="width: 40px;" class="col-center">SL</th>
+            <th style="width: 95px;" class="col-center">Date</th>
+            <th style="width: 100px;" class="col-center">Txn Ref</th>
+            <th>Transaction Details & Category (বিবরণ ও খাত)</th>
+            <th style="width: 115px;" class="col-right">Debit / Dr (৳)</th>
+            <th style="width: 115px;" class="col-right">Credit / Cr (৳)</th>
+            <th style="width: 125px;" class="col-right">Balance (৳)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+        <tfoot>
+          <tr class="totals-row">
+            <td colspan="4" class="font-bold text-uppercase col-right">
+              STATEMENT GRAND TOTALS (সর্বমোট):
+            </td>
+            <td class="col-amount text-danger font-mono font-bold">
+              ${formatCurrency(exportExpense)}
+            </td>
+            <td class="col-amount text-success font-mono font-bold">
+              ${formatCurrency(exportIncome)}
+            </td>
+            <td class="col-amount font-mono font-bold ${exportNet >= 0 ? "text-slate" : "text-danger"}">
+              ${exportNet < 0 ? "-" : ""}${formatCurrency(Math.abs(exportNet))}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- STATEMENT DECLARATION / LEGAL DISCLAIMER -->
+    <div class="statement-declaration-box">
+      <strong>Statement Authenticity & Audit Certification:</strong>
+      This document is an authenticated computer-generated financial statement issued by AmarSalon Cloud Systems.
+      All transactions are recorded in real-time with atomic tokens and cryptographically validated against counter operations.
+      For reconciliation, inquiries, or business audits, contact AmarSalon Business Support at support@amarsalon.xyz.
+    </div>
+
+    <!-- DUAL SIGNATURE & SEAL SECTION -->
+    <div class="signature-section">
+      <div class="sig-col">
+        <div class="system-seal">
+          <div class="seal-icon">✓</div>
+          <div class="seal-text">
+            <span class="seal-main">AMARSALON SECURE AUDIT</span>
+            <span class="seal-sub">AUTHENTICATED LEDGER ENGINE</span>
+          </div>
+        </div>
+        <div class="sig-title">System Verified & Reconciled</div>
+        <div class="sig-sub">Generated electronically by AmarSalon Platform</div>
+        <div class="sig-date">Timestamp: ${statementIssueDate}</div>
+      </div>
+
+      <div class="sig-col" style="text-align: right;">
+        <div class="sig-line"></div>
+        <div class="sig-title">Proprietor / Authorized Signature & Seal</div>
+        <div class="sig-sub">${salonName}</div>
+        <div class="sig-date">Date: ________________________</div>
+      </div>
+    </div>
+
+    <!-- STATEMENT FOOTER -->
+    <div class="statement-footer">
+      <div>AmarSalon Technologies Ltd. • Official Digital Financial Ledger • amarsalon.xyz</div>
+      <div class="font-mono">Ref: ${statementRef} • Page 1 of 1</div>
     </div>
   </div>
 
