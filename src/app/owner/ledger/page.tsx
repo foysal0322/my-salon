@@ -276,70 +276,57 @@ const handleEditEntry = (item: any) => {
                       </div>
                     ) : (
                       <>
-                        {displayedEntries.map((item) => {
-                          const isIncome = item.type === "INCOME";
-                          return (
-                            <div
-                              key={item.id}
-                              className="bg-white dark:bg-slate-800/90 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-center justify-between gap-3"
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div
-                                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs ${isIncome
-                                      ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
-                                      : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300"
-                                    }`}
-                                >
-                                  {isIncome ? (
-                                    <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                  ) : (
-                                    <Minus className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                        <div className="max-h-[440px] overflow-y-auto overscroll-contain pr-1 space-y-2">
+                          {displayedEntries.map((item) => {
+                            const isIncome = item.type === "INCOME";
+                            return (
+                              <div
+                                key={item.id}
+                                className="bg-white dark:bg-slate-800/90 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-600 transition"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                                    {item.category}
+                                  </p>
+                                  {item.note && (
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{item.note}</p>
                                   )}
+                                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{item.entryDate}</p>
                                 </div>
 
-                                    <div className="min-w-0">
-                                      <p className="font-bold text-xs text-slate-900 dark:text-white truncate">
-                                        {item.category}
-                                      </p>
-                                      {item.note && (
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{item.note}</p>
-                                      )}
-                                      <p className="text-[10px] text-slate-400 dark:text-slate-400 mt-0.5">{item.entryDate}</p>
-                                    </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <div className="text-right">
+                                    <p
+                                      className={`font-mono font-bold text-sm ${isIncome
+                                          ? "text-emerald-700 dark:text-emerald-400"
+                                          : "text-rose-700 dark:text-rose-400"
+                                        }`}
+                                    >
+                                      {isIncome ? "+" : "-"}৳{item.amount.toLocaleString()}
+                                    </p>
                                   </div>
 
-                                          <div className="flex items-center gap-2 shrink-0">
-                                            <div className="text-right">
-                                              <p
-                                                className={`font-mono font-bold text-sm ${isIncome
-                                                    ? "text-emerald-700 dark:text-emerald-400"
-                                                    : "text-rose-700 dark:text-rose-400"
-                                                  }`}
-                                              >
-                                                {isIncome ? "+" : "-"}৳{item.amount.toLocaleString()}
-                                              </p>
-                                            </div>
-
-                                              <div className="flex items-center gap-1 border-l border-slate-100 dark:border-slate-700 pl-2 no-print">
-                                                <button
-                                                  onClick={() => handleEditEntry(item)}
-                                                  className="p-1.5 text-slate-400 hover:text-teal-700 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/60 rounded-lg transition cursor-pointer"
-                                                  title={lang === "bn" ? "লেনদেন সম্পাদনা" : "Edit transaction"}
-                                                >
-                                                  <Edit2 className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                  onClick={() => handleDeleteEntry(item.id)}
-                                                  className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg transition cursor-pointer"
-                                                  title={lang === "bn" ? "লেনদেন মুছুন" : "Delete transaction"}
-                                                >
-                                                  <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                              </div>
-                                            </div>
-                                          </div>
-                                          );
-              })}
+                                  <div className="flex items-center gap-1 border-l border-slate-100 dark:border-slate-700 pl-2 no-print">
+                                    <button
+                                      onClick={() => handleEditEntry(item)}
+                                      className="p-1.5 text-slate-400 hover:text-teal-700 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-950/60 rounded-lg transition cursor-pointer"
+                                      title={lang === "bn" ? "লেনদেন সম্পাদনা" : "Edit transaction"}
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteEntry(item.id)}
+                                      className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg transition cursor-pointer"
+                                      title={lang === "bn" ? "লেনদেন মুছুন" : "Delete transaction"}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
 
                               {entries.length > 15 && (
                                 <div className="pt-2 text-center">
