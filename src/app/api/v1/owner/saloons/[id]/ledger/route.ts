@@ -247,315 +247,315 @@ export async function GET(
           `;
         }).join("");
 
-      const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Account Statement - ${salonName}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
+      const html = `< !DOCTYPE html >
+            <html lang="en" >
+              <head>
+              <meta charset="UTF-8" >
+                <meta name="viewport" content = "width=device-width, initial-scale=1.0" >
+                  <title>Account Statement - ${salonName} </title>
+                    < link rel = "preconnect" href = "https://fonts.googleapis.com" >
+                      <link rel="preconnect" href = "https://fonts.gstatic.com" crossorigin >
+                        <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel = "stylesheet" >
+                          <style>
     * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+                            box- sizing: border - box;
+          margin: 0;
+          padding: 0;
+        }
     body {
-      font-family: 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          font- family: 'Hind Siliguri', -apple - system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans - serif;
       color: #0f172a;
       background: #f8fafc;
       padding: 24px;
-      line-height: 1.45;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      line - height: 1.45;
+      -webkit - print - color - adjust: exact;
+      print - color - adjust: exact;
     }
-    .btn-bar {
-      max-width: 820px;
+    .btn - bar {
+      max - width: 820px;
       margin: 0 auto 16px auto;
       display: flex;
-      justify-content: flex-end;
+      justify - content: flex - end;
       gap: 10px;
     }
     .btn {
       padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 600;
+      border - radius: 6px;
+      font - size: 13px;
+      font - weight: 600;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
+      display: inline - flex;
+      align - items: center;
       gap: 6px;
       border: 1px solid transparent;
       transition: background 0.15s ease;
     }
-    .btn-primary {
+    .btn - primary {
       background: #0f172a;
       color: #ffffff;
     }
-    .btn-primary:hover {
+    .btn - primary:hover {
       background: #1e293b;
     }
-    .btn-outline {
+    .btn - outline {
       background: #ffffff;
       color: #475569;
       border: 1px solid #cbd5e1;
     }
-    .btn-outline:hover {
+    .btn - outline:hover {
       background: #f1f5f9;
     }
-    .statement-container {
-      max-width: 820px;
+    .statement - container {
+      max - width: 820px;
       margin: 0 auto;
       background: #ffffff;
       padding: 40px;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      border - radius: 8px;
+      box - shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       border: 1px solid #e2e8f0;
     }
     .header {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding-bottom: 24px;
-      border-bottom: 1px solid #e2e8f0;
-      margin-bottom: 24px;
+      justify - content: space - between;
+      align - items: flex - start;
+      padding - bottom: 24px;
+      border - bottom: 1px solid #e2e8f0;
+      margin - bottom: 24px;
     }
-    .brand-title {
-      font-size: 22px;
-      font-weight: 800;
+    .brand - title {
+      font - size: 22px;
+      font - weight: 800;
       color: #0f172a;
-      letter-spacing: -0.5px;
+      letter - spacing: -0.5px;
     }
-    .brand-sub {
-      font-size: 13px;
+    .brand - sub {
+      font - size: 13px;
       color: #64748b;
-      font-weight: 500;
-      margin-top: 2px;
+      font - weight: 500;
+      margin - top: 2px;
     }
-    .header-details {
-      text-align: right;
-      font-size: 12px;
+    .header - details {
+      text - align: right;
+      font - size: 12px;
       color: #334155;
-      line-height: 1.6;
+      line - height: 1.6;
     }
-    .salon-name {
-      font-size: 15px;
-      font-weight: 700;
+    .salon - name {
+      font - size: 15px;
+      font - weight: 700;
       color: #0f172a;
     }
-    .summary-strip {
+    .summary - strip {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid - template - columns: repeat(3, 1fr);
       gap: 12px;
-      margin-bottom: 24px;
+      margin - bottom: 24px;
     }
-    .summary-card {
+    .summary - card {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
-      border-radius: 6px;
+      border - radius: 6px;
       padding: 12px 14px;
     }
-    .summary-label {
-      font-size: 11px;
-      font-weight: 600;
+    .summary - label {
+      font - size: 11px;
+      font - weight: 600;
       color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      text - transform: uppercase;
+      letter - spacing: 0.5px;
+      margin - bottom: 4px;
     }
-    .summary-amount {
-      font-size: 18px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
+    .summary - amount {
+      font - size: 18px;
+      font - weight: 700;
+      font - variant - numeric: tabular - nums;
     }
-    table.statement-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12.5px;
-      margin-bottom: 28px;
+    table.statement - table {
+      width: 100 %;
+      border - collapse: collapse;
+      font - size: 12.5px;
+      margin - bottom: 28px;
     }
-    table.statement-table thead th {
-      border-bottom: 1.5px solid #0f172a;
+    table.statement - table thead th {
+      border - bottom: 1.5px solid #0f172a;
       padding: 8px 10px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      font - size: 11px;
+      font - weight: 700;
+      text - transform: uppercase;
+      letter - spacing: 0.5px;
       color: #0f172a;
-      text-align: left;
+      text - align: left;
     }
-    table.statement-table td {
+    table.statement - table td {
       padding: 9px 10px;
-      border-bottom: 1px solid #f1f5f9;
-      vertical-align: middle;
+      border - bottom: 1px solid #f1f5f9;
+      vertical - align: middle;
       color: #1e293b;
     }
-    table.statement-table tr {
-      page-break-inside: avoid;
+    table.statement - table tr {
+      page -break-inside: avoid;
     }
-    .col-date {
+    .col - date {
       color: #475569;
-      font-size: 12px;
+      font - size: 12px;
     }
-    .desc-main {
-      font-weight: 600;
+    .desc - main {
+      font - weight: 600;
       color: #0f172a;
     }
-    .desc-sub {
-      font-size: 11px;
+    .desc - sub {
+      font - size: 11px;
       color: #64748b;
-      margin-top: 1px;
+      margin - top: 1px;
     }
-    .col-right {
-      text-align: right;
+    .col - right {
+      text - align: right;
     }
-    .col-amount {
-      text-align: right;
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
+    .col - amount {
+      text - align: right;
+      font - weight: 600;
+      font - variant - numeric: tabular - nums;
     }
-    .font-mono {
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    .font - mono {
+      font - family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     }
-    .font-bold {
-      font-weight: 700;
+    .font - bold {
+      font - weight: 700;
     }
-    .text-success {
+    .text - success {
       color: #16a34a;
     }
-    .text-danger {
+    .text - danger {
       color: #dc2626;
     }
-    .text-dark {
+    .text - dark {
       color: #0f172a;
     }
-    .text-muted {
+    .text - muted {
       color: #64748b;
     }
     .dash {
       color: #cbd5e1;
     }
-    .empty-state {
-      text-align: center;
+    .empty - state {
+      text - align: center;
       padding: 32px;
       color: #64748b;
-      font-style: italic;
+      font - style: italic;
     }
-    .totals-row td {
-      border-top: 1.5px solid #0f172a !important;
-      border-bottom: 1.5px solid #0f172a !important;
-      font-size: 13px;
+    .totals - row td {
+      border - top: 1.5px solid #0f172a!important;
+      border - bottom: 1.5px solid #0f172a!important;
+      font - size: 13px;
       padding: 10px;
       background: #f8fafc;
     }
-    .statement-footer {
-      border-top: 1px solid #e2e8f0;
-      padding-top: 12px;
+    .statement - footer {
+      border - top: 1px solid #e2e8f0;
+      padding - top: 12px;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
+      justify - content: space - between;
+      align - items: center;
+      font - size: 11px;
       color: #94a3b8;
     }
     @media print {
       body {
-        background: #ffffff !important;
-        padding: 0 !important;
+        background: #ffffff!important;
+        padding: 0!important;
       }
-      .statement-container {
-        max-width: 100% !important;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
+      .statement - container {
+        max - width: 100 % !important;
+        padding: 0!important;
+        border: none!important;
+        box - shadow: none!important;
       }
-      .btn-bar {
-        display: none !important;
+      .btn - bar {
+        display: none!important;
       }
       @page {
         size: A4 portrait;
         margin: 12mm 14mm 14mm 14mm;
       }
     }
-  </style>
-</head>
-<body>
-  <div class="btn-bar">
-    <button class="btn btn-primary" onclick="window.print()">Print / Save as PDF</button>
-    <button class="btn btn-outline" onclick="window.close()">Close</button>
-  </div>
+    </style>
+      </head>
+      < body >
+      <div class="btn-bar" >
+        <button class="btn btn-primary" onclick = "window.print()" > Print / Save as PDF</ button >
+          <button class="btn btn-outline" onclick = "window.close()" > Close </button>
+            </div>
 
-  <div class="statement-container">
-    <div class="header">
-      <div>
-        <div class="brand-title">AmarSalon</div>
-        <div class="brand-sub">Account Statement</div>
-      </div>
-      <div class="header-details">
-        <div class="salon-name">${salonName}</div>
-        <div>Period: ${rangeLabelEn}</div>
-        <div>Date: ${statementDate}</div>
-      </div>
+            < div class="statement-container" >
+              <div class="header" >
+                <div>
+                <div class="brand-title" > AmarSalon </div>
+                  < div class="brand-sub" > Account Statement </div>
+                    </div>
+                    < div class="header-details" >
+                      <div class="salon-name" > ${salonName} </div>
+                        < div > Period: ${rangeLabelEn} </div>
+                          < div > Date: ${statementDate} </div>
+                            </div>
+                            </div>
+
+                            < div class="summary-strip" >
+                              <div class="summary-card" >
+                                <div class="summary-label" > Total Inflow </div>
+                                  < div class="summary-amount text-success font-mono" > +${formatCurrency(exportIncome)} </div>
+                                    </div>
+                                    < div class="summary-card" >
+                                      <div class="summary-label" > Total Outflow </div>
+                                        < div class="summary-amount text-danger font-mono" > -${formatCurrency(exportExpense)} </div>
+                                          </div>
+                                          < div class="summary-card" >
+                                            <div class="summary-label" > Net Balance </div>
+                                              < div class="summary-amount font-mono font-bold ${exportNet >= 0 ? "text - dark" : "text - danger"}" >
+                                                ${exportNet < 0 ? "-" : ""}${formatCurrency(Math.abs(exportNet))}
     </div>
+      </div>
+      </div>
 
-    <div class="summary-strip">
-      <div class="summary-card">
-        <div class="summary-label">Total Inflow</div>
-        <div class="summary-amount text-success font-mono">+${formatCurrency(exportIncome)}</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Total Outflow</div>
-        <div class="summary-amount text-danger font-mono">-${formatCurrency(exportExpense)}</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Net Balance</div>
-        <div class="summary-amount font-mono font-bold ${exportNet >= 0 ? "text-dark" : "text-danger"}">
-          ${exportNet < 0 ? "-" : ""}${formatCurrency(Math.abs(exportNet))}
-        </div>
-      </div>
-    </div>
-
-    <table class="statement-table">
-      <thead>
+      < table class="statement-table" >
+        <thead>
         <tr>
-          <th style="width: 100px;">Date</th>
-          <th>Description</th>
-          <th style="width: 120px;" class="col-right">Debit (৳)</th>
-          <th style="width: 120px;" class="col-right">Credit (৳)</th>
-          <th style="width: 130px;" class="col-right">Balance (৳)</th>
-        </tr>
-      </thead>
-      <tbody>
+        <th style="width: 100px;" > Date </th>
+          < th > Description </th>
+          < th style = "width: 120px;" class="col-right" > Debit(৳) </th>
+            < th style = "width: 120px;" class="col-right" > Credit(৳) </th>
+              < th style = "width: 130px;" class="col-right" > Balance(৳) </th>
+                </tr>
+                </thead>
+                <tbody>
         ${rowsHtml}
-      </tbody>
-      <tfoot>
-        <tr class="totals-row">
-          <td colspan="2" class="font-bold">Total</td>
-          <td class="col-amount text-danger font-mono font-bold">${formatCurrency(exportExpense)}</td>
-          <td class="col-amount text-success font-mono font-bold">${formatCurrency(exportIncome)}</td>
-          <td class="col-amount font-mono font-bold ${exportNet >= 0 ? "text-dark" : "text-danger"}">
-            ${exportNet < 0 ? "-" : ""}${formatCurrency(Math.abs(exportNet))}
-          </td>
-        </tr>
+    </tbody>
+      < tfoot >
+      <tr class="totals-row" >
+        <td colspan="2" class="font-bold" > Total </td>
+          < td class="col-amount text-danger font-mono font-bold" > ${formatCurrency(exportExpense)} </td>
+            < td class="col-amount text-success font-mono font-bold" > ${formatCurrency(exportIncome)} </td>
+              < td class="col-amount font-mono font-bold ${exportNet >= 0 ? "text - dark" : "text - danger"}" >
+                ${exportNet < 0 ? "-" : ""}${formatCurrency(Math.abs(exportNet))}
+    </td>
+      </tr>
       </tfoot>
-    </table>
+      </table>
 
-    <div class="statement-footer">
-      <div>AmarSalon • amarsalon.xyz</div>
-      <div class="font-mono">Ref: ${statementRef}</div>
-    </div>
-  </div>
+      < div class="statement-footer" >
+        <div>AmarSalon • amarsalon.xyz </div>
+          < div class="font-mono" > Ref: ${statementRef} </div>
+            </div>
+            </div>
 
-  <script>
+            <script>
     window.onload = function () {
       setTimeout(function () {
         window.print();
       }, 500);
     };
-      </script>
-        </body>
-        </html>`;
+    </script>
+      </body>
+      </html>`;
 
       return new Response(html, {
         headers: {

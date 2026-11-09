@@ -353,6 +353,24 @@ export default function OwnerDashboardPage() {
     }
   };
 
+  // Guaranteed resilient chair list computation (must be declared before early returns to obey Rules of Hooks)
+  const chairList = useMemo(() => {
+    if (!salon) return [];
+    if (Array.isArray(salon.chairStates) && salon.chairStates.length > 0) {
+      return salon.chairStates;
+    }
+    if (typeof salon.chairStates === "string") {
+      try {
+        const p = JSON.parse(salon.chairStates);
+        if (Array.isArray(p) && p.length > 0) return p;
+      } catch (e) { }
+    }
+    return Array.from({ length: salon.totalChairs || 3 }, (_, i) => ({
+      chairNo: i + 1,
+      isBusy: false,
+    }));
+  }, [salon?.chairStates, salon?.totalChairs]);
+
   if (!user) {
     return (
       <AppShell>
@@ -400,24 +418,6 @@ export default function OwnerDashboardPage() {
 
   const isExpired = subStatus?.status === "EXPIRED";
   const nextCustomer = waitingBookings[0];
-
-  // Guaranteed resilient chair list computation
-  const chairList = useMemo(() => {
-    if (!salon) return [];
-    if (Array.isArray(salon.chairStates) && salon.chairStates.length > 0) {
-      return salon.chairStates;
-    }
-    if (typeof salon.chairStates === "string") {
-      try {
-        const p = JSON.parse(salon.chairStates);
-        if (Array.isArray(p) && p.length > 0) return p;
-      } catch (e) { }
-    }
-    return Array.from({ length: salon.totalChairs || 3 }, (_, i) => ({
-      chairNo: i + 1,
-      isBusy: false,
-    }));
-  }, [salon?.chairStates, salon?.totalChairs]);
 
   return (
     <AppShell>
@@ -748,65 +748,65 @@ export default function OwnerDashboardPage() {
 
         {/* CHAIR GRID MATRIX (THE ONE-TAP CONSOLE) */}
         <section className="bg-white dark:bg-slate-800/90 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-700 shadow-xs">
-            <div className="flex items-center gap-1.5 mb-3">
-              <Armchair className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                {t.chairMatrix}
-              </h3>
-            </div>
+          <div className="flex items-center gap-1.5 mb-3">
+            <Armchair className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+              {t.chairMatrix}
+            </h3>
+          </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {
-                chairList && chairList.length > 0 ? (
-                  chairList.map((chair: any) => {
-                    const isBusy = chair.isBusy;
-                    return (
-                      <button
-                        key={chair.chairNo}
-                        type="button"
-                        onClick={() => handleToggleChair(chair.chairNo)}
-                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between min-h-[90px] active:scale-95 ${isBusy
-                          ? "bg-rose-50 dark:bg-rose-950/40 border-rose-400 dark:border-rose-800 text-rose-900 dark:text-rose-200 shadow-xs"
-                          : "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 shadow-xs"
-                          }`}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-sm font-extrabold">
-                            {lang === "bn" ? `চেয়ার #${chair.chairNo}` : `Chair #${chair.chairNo}`}
-                          </span>
-                          <span
-                            className={`w-3 h-3 rounded-full ${isBusy ? "bg-rose-500 animate-pulse" : "bg-emerald-500"
-                              }`}
-                          />
-                        </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            {
+              chairList && chairList.length > 0 ? (
+                chairList.map((chair: any) => {
+                  const isBusy = chair.isBusy;
+                  return (
+                    <button
+                      key={chair.chairNo}
+                      type="button"
+                      onClick={() => handleToggleChair(chair.chairNo)}
+                      className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between min-h-[90px] active:scale-95 ${isBusy
+                        ? "bg-rose-50 dark:bg-rose-950/40 border-rose-400 dark:border-rose-800 text-rose-900 dark:text-rose-200 shadow-xs"
+                        : "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 shadow-xs"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="text-sm font-extrabold">
+                          {lang === "bn" ? `চেয়ার #${chair.chairNo}` : `Chair #${chair.chairNo}`}
+                        </span>
+                        <span
+                          className={`w-3 h-3 rounded-full ${isBusy ? "bg-rose-500 animate-pulse" : "bg-emerald-500"
+                            }`}
+                        />
+                      </div>
 
-                        <div className="text-left mt-2">
-                          <span
-                            className={`inline-block text-xs font-bold px-2 py-0.5 rounded-lg ${isBusy
-                              ? "bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-100"
-                              : "bg-emerald-200 dark:bg-emerald-900 text-emerald-950 dark:text-emerald-100"
-                              }`}
-                          >
-                            {isBusy ? t.chairBusy : t.chairFree}
-                          </span>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                            {isBusy
-                              ? lang === "bn"
-                                ? "ট্যাপ করে খালি করুন"
-                                : "Tap to free"
-                              : lang === "bn"
-                                ? "ট্যাপ করে ব্যস্ত করুন"
-                                : "Tap to book"}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <p className="text-xs text-slate-400 col-span-2">{t.loading}</p>
-                )
-              }
-            </div>
+                      <div className="text-left mt-2">
+                        <span
+                          className={`inline-block text-xs font-bold px-2 py-0.5 rounded-lg ${isBusy
+                            ? "bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-100"
+                            : "bg-emerald-200 dark:bg-emerald-900 text-emerald-950 dark:text-emerald-100"
+                            }`}
+                        >
+                          {isBusy ? t.chairBusy : t.chairFree}
+                        </span>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                          {isBusy
+                            ? lang === "bn"
+                              ? "ট্যাপ করে খালি করুন"
+                              : "Tap to free"
+                            : lang === "bn"
+                              ? "ট্যাপ করে ব্যস্ত করুন"
+                              : "Tap to book"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="text-xs text-slate-400 col-span-2">{t.loading}</p>
+              )
+            }
+          </div>
         </section>
 
         {/* HYBRID WALK-IN COUNTER CONTROLLER */}
