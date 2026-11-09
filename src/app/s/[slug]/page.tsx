@@ -19,6 +19,7 @@ import {
   Ticket,
   AlertCircle,
   ExternalLink,
+  Store,
 } from "lucide-react";
 
 interface ServiceItem {
@@ -63,6 +64,7 @@ export default function SalonProfilePage() {
     lang,
     t,
     user,
+    activeSalonId,
     favorites,
     toggleFavorite,
     playChime,
@@ -72,6 +74,8 @@ export default function SalonProfilePage() {
   } = useApp();
 
   const [salon, setSalon] = useState<SalonDetails | null>(null);
+  const isOwner = user?.role === "OWNER";
+  const isMySalon = isOwner && (salon?.id === activeSalonId || (user?.id && (salon as any)?.ownerId === user.id));
   const [loading, setLoading] = useState(true);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
@@ -183,6 +187,16 @@ export default function SalonProfilePage() {
     if (e) e.preventDefault();
     setErrorMessage("");
     setExistingBookingData(null);
+
+    if (isOwner) {
+      setErrorMessage(
+        lang === "bn"
+          ? "সেলুন মালিক অ্যাকাউন্ট থেকে কাস্টমার সিরিয়াল বুকিং করা সম্ভব নয়।"
+          : "Salon owners cannot book queue serials."
+      );
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -480,16 +494,32 @@ export default function SalonProfilePage() {
             </p>
           </div>
 
-          <button
-            onClick={() => {
-              triggerHaptic(35);
-              setShowQueueModal(true);
-            }}
-            className="flex items-center gap-1.5 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-5 py-3 rounded-2xl shadow-md transition cursor-pointer"
-          >
-            <Ticket className="w-4 h-4" />
-            <span>{t.joinLiveQueue}</span>
-          </button>
+          {isOwner ? (
+            isMySalon ? (
+              <Link
+                href="/owner/dashboard"
+                className="flex items-center gap-1.5 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white px-5 py-3 rounded-2xl shadow-md transition cursor-pointer"
+              >
+                <Store className="w-4 h-4" />
+                <span>{lang === "bn" ? "মালিক ড্যাশবোর্ড" : "Owner Dashboard"}</span>
+              </Link>
+            ) : (
+              <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 px-3.5 py-2.5 rounded-xl inline-block text-center">
+                {lang === "bn" ? "মালিক অ্যাকাউন্টে বুকিং প্রযোজ্য নয়" : "Owners cannot book serials"}
+              </span>
+            )
+          ) : (
+            <button
+              onClick={() => {
+                triggerHaptic(35);
+                setShowQueueModal(true);
+              }}
+              className="flex items-center gap-1.5 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-5 py-3 rounded-2xl shadow-md transition cursor-pointer"
+            >
+              <Ticket className="w-4 h-4" />
+              <span>{t.joinLiveQueue}</span>
+            </button>
+          )}
         </div>
       </aside>
 

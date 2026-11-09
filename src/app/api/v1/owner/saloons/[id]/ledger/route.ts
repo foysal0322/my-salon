@@ -43,99 +43,99 @@ export async function GET(
     let whereClause: any = { saloonId: id };
     let rangeLabel = "চলতি মাস (This Month)";
 
-    if (range === "7days") {
-      const past7 = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
-      const past7Str = past7.toISOString().split("T")[0];
-      whereClause.entryDate = { gte: past7Str, lte: todayStr };
-      rangeLabel = `গত ৭ দিন (${past7Str} থেকে ${todayStr})`;
-    } else if (range === "15days") {
-      const past15 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-      const past15Str = past15.toISOString().split("T")[0];
-      whereClause.entryDate = { gte: past15Str, lte: todayStr };
-      rangeLabel = `গত ১৫ দিন (${past15Str} থেকে ${todayStr})`;
-    } else if (range === "30days") {
-      const past30 = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
-      const past30Str = past30.toISOString().split("T")[0];
-      whereClause.entryDate = { gte: past30Str, lte: todayStr };
-      rangeLabel = `গত ৩০ দিন (${past30Str} থেকে ${todayStr})`;
-    } else if (range === "custom") {
-      if (startDate && endDate) {
-        whereClause.entryDate = { gte: startDate, lte: endDate };
-        rangeLabel = `${startDate} থেকে ${endDate}`;
-      } else if (startDate) {
-        whereClause.entryDate = { gte: startDate };
-        rangeLabel = `${startDate} থেকে অদ্যাবধি`;
-      } else if (endDate) {
-        whereClause.entryDate = { lte: endDate };
-        rangeLabel = `${endDate} পর্যন্ত`;
+      if (range === "7days") {
+        const past7 = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+        const past7Str = past7.toISOString().split("T")[0];
+        whereClause.entryDate = { gte: past7Str, lte: todayStr };
+        rangeLabel = `গত ৭ দিন (${past7Str} থেকে ${todayStr})`;
+      } else if (range === "15days") {
+        const past15 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        const past15Str = past15.toISOString().split("T")[0];
+        whereClause.entryDate = { gte: past15Str, lte: todayStr };
+        rangeLabel = `গত ১৫ দিন (${past15Str} থেকে ${todayStr})`;
+      } else if (range === "30days") {
+        const past30 = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+        const past30Str = past30.toISOString().split("T")[0];
+        whereClause.entryDate = { gte: past30Str, lte: todayStr };
+        rangeLabel = `গত ৩০ দিন (${past30Str} থেকে ${todayStr})`;
+      } else if (range === "custom") {
+        if (startDate && endDate) {
+          whereClause.entryDate = { gte: startDate, lte: endDate };
+          rangeLabel = `${startDate} থেকে ${endDate}`;
+        } else if (startDate) {
+          whereClause.entryDate = { gte: startDate };
+          rangeLabel = `${startDate} থেকে অদ্যাবধি`;
+        } else if (endDate) {
+          whereClause.entryDate = { lte: endDate };
+          rangeLabel = `${endDate} পর্যন্ত`;
+        }
+      } else if (period === "daily") {
+        whereClause.entryDate = todayStr;
+        rangeLabel = `আজকের দিন (${todayStr})`;
+      } else if (period === "yearly") {
+        whereClause.entryDate = { startsWith: `${currentYear}` };
+        rangeLabel = `চলতি বছর (${currentYear})`;
+      } else if (exportFormat) {
+        whereClause.entryDate = { startsWith: currentMonthPrefix };
+        rangeLabel = `চলতি মাস (${currentMonthPrefix})`;
       }
-    } else if (period === "daily") {
-      whereClause.entryDate = todayStr;
-      rangeLabel = `আজকের দিন (${todayStr})`;
-    } else if (period === "yearly") {
-      whereClause.entryDate = { startsWith: `${currentYear}` };
-      rangeLabel = `চলতি বছর (${currentYear})`;
-    } else if (exportFormat) {
-      whereClause.entryDate = { startsWith: currentMonthPrefix };
-      rangeLabel = `চলতি মাস (${currentMonthPrefix})`;
-    }
 
-    // 3. Query entries
-    const entries = await prisma.ledgerEntry.findMany({
-      where: whereClause,
-      orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
-    });
-
-    const exportIncome = entries
-      .filter((e) => e.type === "INCOME")
-      .reduce((sum, e) => sum + e.amount, 0);
-
-    const exportExpense = entries
-      .filter((e) => e.type === "EXPENSE")
-      .reduce((sum, e) => sum + e.amount, 0);
-
-    const exportNet = exportIncome - exportExpense;
-
-    // Handle CSV export with UTF-8 BOM (\uFEFF)
-    if (exportFormat === "csv") {
-      const header = ["তারিখ (Date)", "ধরন (Type)", "ক্যাটাগরি (Category)", "টাকার পরিমাণ (BDT)", "নোট (Note)"];
-      const rows = entries.map((e) => {
-        const typeLabel = e.type === "INCOME" ? "আয় (Income)" : "ব্যয় (Expense)";
-        const cleanNote = (e.note || "").replace(/"/g, '""');
-        return [
-          `"${e.entryDate}"`,
-          `"${typeLabel}"`,
-          `"${e.category}"`,
-          e.amount,
-          `"${cleanNote}"`,
-        ];
+      // 3. Query entries
+      const entries = await prisma.ledgerEntry.findMany({
+        where: whereClause,
+        orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
       });
 
-      const csvContent =
-        "\uFEFF" +
-        [header.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+      const exportIncome = entries
+        .filter((e) => e.type === "INCOME")
+        .reduce((sum, e) => sum + e.amount, 0);
 
-      return new Response(csvContent, {
-        headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="hishab_khata_${range || period || "report"}_${todayStr}.csv"`,
-        },
-      });
-    }
+      const exportExpense = entries
+        .filter((e) => e.type === "EXPENSE")
+        .reduce((sum, e) => sum + e.amount, 0);
 
-    // Handle PDF export (Print-ready A4 HTML document)
-    if (exportFormat === "pdf") {
-      const salon = await prisma.saloon.findUnique({
-        where: { id },
-        select: { nameBn: true, nameEn: true, code: true, address: true, phone: true },
-      });
+      const exportNet = exportIncome - exportExpense;
 
-      const salonName = salon?.nameBn || salon?.nameEn || "AmarSalon";
-      const salonAddress = salon?.address || "";
-      const salonPhone = salon?.phone || "";
-      const salonCode = salon?.code || "";
+      // Handle CSV export with UTF-8 BOM (\uFEFF)
+      if (exportFormat === "csv") {
+        const header = ["তারিখ (Date)", "ধরন (Type)", "ক্যাটাগরি (Category)", "টাকার পরিমাণ (BDT)", "নোট (Note)"];
+        const rows = entries.map((e) => {
+          const typeLabel = e.type === "INCOME" ? "আয় (Income)" : "ব্যয় (Expense)";
+          const cleanNote = (e.note || "").replace(/"/g, '""');
+          return [
+            `"${e.entryDate}"`,
+            `"${typeLabel}"`,
+            `"${e.category}"`,
+            e.amount,
+            `"${cleanNote}"`,
+          ];
+        });
 
-      const html = `<!DOCTYPE html>
+        const csvContent =
+          "\uFEFF" +
+          [header.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+
+        return new Response(csvContent, {
+          headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": `attachment; filename="hishab_khata_${range || period || "report"}_${todayStr}.csv"`,
+          },
+        });
+      }
+
+      // Handle PDF export (Print-ready A4 HTML document)
+      if (exportFormat === "pdf") {
+        const salon = await prisma.saloon.findUnique({
+          where: { id },
+          select: { nameBn: true, nameEn: true, code: true, address: true, phone: true },
+        });
+
+        const salonName = salon?.nameBn || salon?.nameEn || "AmarSalon";
+        const salonAddress = salon?.address || "";
+        const salonPhone = salon?.phone || "";
+        const salonCode = salon?.code || "";
+
+        const html = `<!DOCTYPE html>
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
@@ -335,8 +335,8 @@ export async function GET(
       </thead>
       <tbody>
         ${entries.length === 0
-          ? `<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94a3b8;">কোনো লেনদেন রেকর্ড পাওয়া যায়নি</td></tr>`
-          : entries
+            ? `<tr><td colspan="5" style="text-align: center; padding: 24px; color: #94a3b8;">কোনো লেনদেন রেকর্ড পাওয়া যায়নি</td></tr>`
+            : entries
               .map(
                 (item, idx) => `
           <tr>
@@ -376,141 +376,141 @@ export async function GET(
 </body>
 </html>`;
 
-      return new Response(html, {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
+        return new Response(html, {
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+          },
+        });
+      }
+
+      return NextResponse.json({
+        summary: {
+          thisMonthIncome,
+          thisMonthExpense,
+          totalIncome: thisMonthIncome,
+          totalExpense: thisMonthExpense,
+          netProfit: thisMonthProfit,
+          totalEntries: entries.length,
         },
+        entries,
       });
-    }
-
-    return NextResponse.json({
-      summary: {
-        thisMonthIncome,
-        thisMonthExpense,
-        totalIncome: thisMonthIncome,
-        totalExpense: thisMonthExpense,
-        netProfit: thisMonthProfit,
-        totalEntries: entries.length,
-      },
-      entries,
-    });
-  } catch (error: any) {
-    console.error("Ledger fetch error:", error);
-    return NextResponse.json(
-      { error: "হিসাব খাতার তথ্য লোড করতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { type, category, amount, note, entryDate } = body;
-
-    if (!type || !category || !amount || Number(amount) <= 0) {
+    } catch (error: any) {
+      console.error("Ledger fetch error:", error);
       return NextResponse.json(
-        { error: "লেনদেনের ধরন (আয়/ব্যয়), ক্যাটাগরি এবং সঠিক টাকার পরিমাণ দিন।" },
-        { status: 400 }
+        { error: "হিসাব খাতার তথ্য লোড করতে সমস্যা হয়েছে।" },
+        { status: 500 }
       );
     }
-
-    const todayStr = new Date().toISOString().split("T")[0];
-    const dateToRecord = entryDate || todayStr;
-
-    const entry = await prisma.ledgerEntry.create({
-      data: {
-        saloonId: id,
-        type: type === "INCOME" ? "INCOME" : "EXPENSE",
-        category,
-        amount: Number(amount),
-        note,
-        entryDate: dateToRecord,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: `${type === "INCOME" ? "আয়" : "ব্যয়"} সফলভাবে হিসাব খাতায় যুক্ত হয়েছে!`,
-      entry,
-    });
-  } catch (error: any) {
-    console.error("Ledger create error:", error);
-    return NextResponse.json(
-      { error: "হিসাব খাতায় তথ্য যোগ করতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
   }
-}
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { entryId, type, category, amount, note, entryDate } = body;
+export async function POST(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+  ) {
+    try {
+      const { id } = await params;
+      const body = await request.json();
+      const { type, category, amount, note, entryDate } = body;
 
-    if (!entryId) {
-      return NextResponse.json({ error: "লেনদেন আইডি প্রয়োজন।" }, { status: 400 });
+      if (!type || !category || !amount || Number(amount) <= 0) {
+        return NextResponse.json(
+          { error: "লেনদেনের ধরন (আয়/ব্যয়), ক্যাটাগরি এবং সঠিক টাকার পরিমাণ দিন।" },
+          { status: 400 }
+        );
+      }
+
+      const todayStr = new Date().toISOString().split("T")[0];
+      const dateToRecord = entryDate || todayStr;
+
+      const entry = await prisma.ledgerEntry.create({
+        data: {
+          saloonId: id,
+          type: type === "INCOME" ? "INCOME" : "EXPENSE",
+          category,
+          amount: Number(amount),
+          note,
+          entryDate: dateToRecord,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `${type === "INCOME" ? "আয়" : "ব্যয়"} সফলভাবে হিসাব খাতায় যুক্ত হয়েছে!`,
+        entry,
+      });
+    } catch (error: any) {
+      console.error("Ledger create error:", error);
+      return NextResponse.json(
+        { error: "হিসাব খাতায় তথ্য যোগ করতে সমস্যা হয়েছে।" },
+        { status: 500 }
+      );
     }
-
-    const updated = await prisma.ledgerEntry.update({
-      where: { id: entryId, saloonId: id },
-      data: {
-        type: type !== undefined ? (type === "INCOME" ? "INCOME" : "EXPENSE") : undefined,
-        category: category !== undefined ? category : undefined,
-        amount: amount !== undefined ? Number(amount) : undefined,
-        note: note !== undefined ? note : undefined,
-        entryDate: entryDate !== undefined ? entryDate : undefined,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "লেনদেন সফলভাবে আপডেট করা হয়েছে।",
-      entry: updated,
-    });
-  } catch (error: any) {
-    console.error("Ledger update error:", error);
-    return NextResponse.json(
-      { error: "লেনদেন আপডেট করতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
   }
-}
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const entryId = searchParams.get("entryId");
+  export async function PUT(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+  ) {
+    try {
+      const { id } = await params;
+      const body = await request.json();
+      const { entryId, type, category, amount, note, entryDate } = body;
 
-    if (!entryId) {
-      return NextResponse.json({ error: "লেনদেন আইডি প্রয়োজন।" }, { status: 400 });
+      if (!entryId) {
+        return NextResponse.json({ error: "লেনদেন আইডি প্রয়োজন।" }, { status: 400 });
+      }
+
+      const updated = await prisma.ledgerEntry.update({
+        where: { id: entryId, saloonId: id },
+        data: {
+          type: type !== undefined ? (type === "INCOME" ? "INCOME" : "EXPENSE") : undefined,
+          category: category !== undefined ? category : undefined,
+          amount: amount !== undefined ? Number(amount) : undefined,
+          note: note !== undefined ? note : undefined,
+          entryDate: entryDate !== undefined ? entryDate : undefined,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "লেনদেন সফলভাবে আপডেট করা হয়েছে।",
+        entry: updated,
+      });
+    } catch (error: any) {
+      console.error("Ledger update error:", error);
+      return NextResponse.json(
+        { error: "লেনদেন আপডেট করতে সমস্যা হয়েছে।" },
+        { status: 500 }
+      );
     }
-
-    await prisma.ledgerEntry.delete({
-      where: { id: entryId, saloonId: id },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "লেনদেন মুছে ফেলা হয়েছে।",
-    });
-  } catch (error: any) {
-    console.error("Ledger delete error:", error);
-    return NextResponse.json(
-      { error: "লেনদেন মুছতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
   }
-}
+
+  export async function DELETE(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+  ) {
+    try {
+      const { id } = await params;
+      const { searchParams } = new URL(request.url);
+      const entryId = searchParams.get("entryId");
+
+      if (!entryId) {
+        return NextResponse.json({ error: "লেনদেন আইডি প্রয়োজন।" }, { status: 400 });
+      }
+
+      await prisma.ledgerEntry.delete({
+        where: { id: entryId, saloonId: id },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "লেনদেন মুছে ফেলা হয়েছে।",
+      });
+    } catch (error: any) {
+      console.error("Ledger delete error:", error);
+      return NextResponse.json(
+        { error: "লেনদেন মুছতে সমস্যা হয়েছে।" },
+        { status: 500 }
+      );
+    }
+  }

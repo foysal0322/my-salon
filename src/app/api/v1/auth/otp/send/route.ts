@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendOtpSms } from "@/lib/sms";
 
 // Bangladesh Phone Validation Regex: 013 to 019 followed by 8 digits
 const BD_PHONE_REGEX = /^(?:\+8801|8801|01)[3-9]\d{8}$/;
@@ -54,13 +55,15 @@ export async function POST(request: Request) {
       },
     });
 
-    // In a production environment with BD SMS Gateway (e.g., SSL Wireless, BoomCast, GreenWeb),
-    // we would call the SMS API here. We provide the generated code in response for testing/demo.
+    // Send real SMS OTP via Bulk SMS BD Gateway
+    const smsResult = await sendOtpSms(phone, code);
+
     return NextResponse.json({
       success: true,
       message: "আপনার মোবাইলে ৬ ডিজিটের ওটিপি পাঠানো হয়েছে।",
       phone,
       expiresIn: 180,
+      smsSent: smsResult.success,
       // Demo helper so testing can be performed seamlessly in development/demo environments
       demoOtp: code,
     });

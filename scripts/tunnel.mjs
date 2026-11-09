@@ -18,7 +18,7 @@ const port = process.env.PORT || "3000";
 
 const logStream = fs.createWriteStream(logFilePath, { flags: "a" });
 
-console.log(`\x1b[36m[AmarSaloon Tunnel]\x1b[0m Starting Cloudflare Quick Tunnel for http://localhost:${port}...`);
+console.log(`\x1b[36m[AmarSalon Tunnel]\x1b[0m Starting Cloudflare Quick Tunnel for http://localhost:${port}...`);
 
 const child = spawn(
   "cloudflared",

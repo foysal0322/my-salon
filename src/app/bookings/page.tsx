@@ -79,9 +79,9 @@ function BookingsContent() {
 
     if (!targetId && !targetPhone) {
       try {
-        targetPhone = localStorage.getItem("amarsaloon_guest_phone") || "";
-        fallbackBookingId = fallbackBookingId || localStorage.getItem("amarsaloon_last_booking_id");
-      } catch (e) {}
+        targetPhone = localStorage.getItem("amarsalon_guest_phone") || localStorage.getItem("amarsaloon_guest_phone") || "";
+        fallbackBookingId = fallbackBookingId || localStorage.getItem("amarsalon_last_booking_id") || localStorage.getItem("amarsaloon_last_booking_id");
+      } catch (e) { }
     }
 
     if (!targetId && !targetPhone && !fallbackBookingId) {
@@ -97,8 +97,8 @@ function BookingsContent() {
       const query = targetId
         ? `userId=${targetId}`
         : targetPhone
-        ? `phone=${targetPhone}`
-        : "";
+          ? `phone=${targetPhone}`
+          : "";
 
       if (!query) {
         setLoading(false);
@@ -185,8 +185,8 @@ function BookingsContent() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-slate-900">{t.navBookings}</h1>
-            <p className="text-xs text-slate-500">
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white">{t.navBookings}</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {lang === "bn" ? "লাইভ সিরিয়াল ট্র্যাকার ও হিস্ট্রি" : "Live Queue Tracker & History"}
             </p>
           </div>
@@ -194,7 +194,7 @@ function BookingsContent() {
           <button
             onClick={handleManualRefresh}
             disabled={refreshing}
-            className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 transition cursor-pointer"
+            className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer"
             title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-teal-600" : ""}`} />
@@ -214,8 +214,8 @@ function BookingsContent() {
                       ? "আপনার কাজ চলছে"
                       : "Currently in Service"
                     : lang === "bn"
-                    ? "লাইভ সিরিয়ালে আছেন"
-                    : "Live in Queue"}
+                      ? "লাইভ সিরিয়ালে আছেন"
+                      : "Live in Queue"}
                 </span>
               </div>
 
@@ -301,25 +301,25 @@ function BookingsContent() {
 
         {/* BOOKINGS HISTORY SECTION */}
         <section className="mt-6">
-          <h2 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-teal-600" />
+          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             <span>{lang === "bn" ? "সকল সিরিয়াল ও বুকিং" : "Booking History"}</span>
           </h2>
 
           {loading ? (
             <div className="space-y-3 animate-pulse">
-              <div className="h-20 bg-slate-200 rounded-2xl" />
-              <div className="h-20 bg-slate-200 rounded-2xl" />
+              <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+              <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
             </div>
           ) : historyBookings.length === 0 && !activeBooking ? (
-            <div className="bg-white rounded-3xl p-8 border border-slate-200/80 text-center shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center mx-auto mb-3">
+            <div className="bg-white dark:bg-slate-800/90 rounded-3xl p-8 border border-slate-200/80 dark:border-slate-700 text-center shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto mb-3">
                 <Ticket className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-slate-800 mb-1">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
                 {lang === "bn" ? "কোন সক্রিয় সিরিয়াল নেই" : "No Active Bookings"}
               </h3>
-              <p className="text-xs text-slate-500 mb-4 max-w-xs mx-auto">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs mx-auto">
                 {lang === "bn"
                   ? "কাছের সেলুন খুঁজে সার্ভিস বেছে নিন এবং ঘরে বসেই লাইভ সিরিয়াল নিন।"
                   : "Discover nearby salons and take live waiting tokens directly from your phone."}
@@ -341,30 +341,29 @@ function BookingsContent() {
                 return (
                   <div
                     key={b.id}
-                    className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs flex items-center justify-between gap-3"
+                    className="bg-white dark:bg-slate-800/90 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-center justify-between gap-3"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md">
+                        <span className="font-mono font-bold text-xs bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md">
                           #{String(b.tokenNumber).padStart(3, "0")}
                         </span>
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            isCompleted
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : isWaiting
-                              ? "bg-amber-50 text-amber-800 border border-amber-200"
-                              : "bg-slate-100 text-slate-600"
-                          }`}
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isCompleted
+                            ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                            : isWaiting
+                              ? "bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                              : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                            }`}
                         >
                           {b.status}
                         </span>
                       </div>
 
-                      <h4 className="font-bold text-sm text-slate-900 truncate">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
                         {b.saloon?.nameBn || "সেলুন"}
                       </h4>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
+                      <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
                         {b.bookingDate} • ৳{b.totalAmount}
                       </p>
                     </div>
@@ -376,7 +375,7 @@ function BookingsContent() {
                             fetchActiveBooking(b.id);
                             window.scrollTo({ top: 0, behavior: "smooth" });
                           }}
-                          className="text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-xl border border-teal-200 transition cursor-pointer"
+                          className="text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 transition cursor-pointer"
                         >
                           {lang === "bn" ? "লাইভ ট্র্যাক" : "Track"}
                         </button>
@@ -386,7 +385,8 @@ function BookingsContent() {
                 );
               })}
             </div>
-          )}
+          )
+          }
         </section>
       </div>
     </AppShell>

@@ -57,59 +57,84 @@ export async function POST(request: Request) {
       senderNumber,
       trxId,
       receiptUrl,
+      bankName,
+      accountName,
+      accountNumber,
     } = body;
 
-    if (!saloonId || (!trxId && !receiptUrl)) {
-      return NextResponse.json(
-        { error: "Transaction ID (TrxID) অথবা ব্যাংক স্লিপের তথ্য প্রদান করুন।" },
-        { status: 400 }
-      );
-    }
-
-    const cleanTrxId = trxId ? String(trxId).trim().toUpperCase() : null;
-
-    // Rule TRD Section 9.2: TrxID Anti-Fraud check
-    if (cleanTrxId) {
-      const existing = await prisma.subscription.findUnique({
-        where: { trxId: cleanTrxId },
-      });
-      if (existing) {
+      if (!saloonId) {
         return NextResponse.json(
-          {
-            error:
-              "এই Transaction ID (TrxID) দিয়ে ইতোমধ্যে পেমেন্ট সাবমিট করা হয়েছে। ভিন্ন TrxID প্রদান করুন।",
-          },
+          { error: "সেলুন আইডি প্রদান করুন।" },
           { status: 400 }
         );
       }
+
+      if (paymentMethod === "BANK") {
+        if (!bankName || !accountName || !accountNumber) {
+          return NextResponse.json(
+            { error: "ব্যাংকের নাম, অ্যাকাউন্টের নাম এবং অ্যাকাউন্ট নম্বর আবশ্যক।" },
+            { status: 400 }
+          );
+        }
+      } else {
+        if (!trxId && !receiptUrl) {
+          return NextResponse.json(
+            { error: "Transaction ID (TrxID) প্রদান করুন।" },
+            { status: 400 }
+          );
+        }
+      }
+
+      const cleanTrxId = trxId ? String(trxId).trim().toUpperCase() : null;
+
+      // Rule TRD Section 9.2: TrxID Anti-Fraud check
+      if (cleanTrxId) {
+        const existing = await prisma.subscription.findUnique({
+          where: { trxId: cleanTrxId },
+        });
+        if (existing) {
+          return NextResponse.json(
+            {
+              error:
+                "এই Transaction ID (TrxID) দিয়ে ইতোমধ্যে পেমেন্ট সাবমিট করা হয়েছে। ভিন্ন TrxID প্রদান করুন।",
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      const amount = planType === "YEARLY" ? 1010 : 99;
+
+      const adminNote =
+        paymentMethod === "BANK"
+          ? `ব্যাংক: ${bankName} | হিসাবের নাম: ${accountName} | হিসাব নং: ${accountNumber}`
+          : null;
+
+      const subscription = await prisma.subscription.create({
+        data: {
+          saloonId,
+          planType,
+          amount,
+          paymentMethod,
+          senderNumber: paymentMethod === "BANK" ? String(accountNumber).trim() : (senderNumber ? String(senderNumber).trim() : null),
+          trxId: cleanTrxId,
+          receiptUrl,
+          adminNote,
+          status: "PENDING",
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message:
+          "পেমেন্টের তথ্য জমা হয়েছে। এডমিন যাচাই করে প্যাকেজ সচল করবেন (সাধারণত ১৫-৩০ মিনিট)।",
+        subscription,
+      });
+    } catch (error: any) {
+      console.error("Subscription submission error:", error);
+      return NextResponse.json(
+        { error: "পেমেন্ট সাবমিট করতে সমস্যা হয়েছে।" },
+        { status: 500 }
+      );
     }
-
-    const amount = planType === "YEARLY" ? 4999 : 499;
-
-    const subscription = await prisma.subscription.create({
-      data: {
-        saloonId,
-        planType,
-        amount,
-        paymentMethod,
-        senderNumber: senderNumber ? String(senderNumber).trim() : null,
-        trxId: cleanTrxId,
-        receiptUrl,
-        status: "PENDING",
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message:
-        "পেমেন্টের তথ্য জমা হয়েছে। এডমিন যাচাই করে প্যাকেজ সচল করবেন (সাধারণত ১৫-৩০ মিনিট)।",
-      subscription,
-    });
-  } catch (error: any) {
-    console.error("Subscription submission error:", error);
-    return NextResponse.json(
-      { error: "পেমেন্ট সাবমিট করতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
   }
-}

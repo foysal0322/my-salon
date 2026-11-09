@@ -22,14 +22,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Mobile-First Shell
   return (
-    <div className="min-h-dvh bg-slate-200/50 flex justify-center selection:bg-teal-500 selection:text-white">
-      <div className="w-full max-w-[480px] min-h-dvh bg-[#FAF9F6] shadow-2xl relative flex flex-col border-x border-slate-200/80 pb-20 overflow-x-hidden">
-        <GlobalNotificationToast />
-        <InstallBanner />
-        <Header />
-        <main className="flex-1 flex flex-col">{children}</main>
-        <BottomNav />
-      </div>
-    </div>
-  );
+        <div className="min-h-dvh bg-slate-200/50 dark:bg-slate-950 flex justify-center selection:bg-teal-500 selection:text-white transition-colors">
+          <div className="w-full max-w-[480px] min-h-dvh bg-[#FAF9F6] dark:bg-slate-900 shadow-2xl relative flex flex-col border-x border-slate-200/80 dark:border-slate-800 pb-20 overflow-x-hidden text-slate-900 dark:text-slate-100 transition-colors">
+            <GlobalNotificationToast />
+            <InstallBanner />
+            <Header />
+            <main className="flex-1 flex flex-col">{children}</main>
+            <BottomNav />
+          </div>
+        </div>
+        );
 }

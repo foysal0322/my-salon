@@ -27,6 +27,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Role Enforcement: Owners cannot book customer queue serials
+    if (customerId) {
+      const userRecord = await prisma.user.findUnique({ where: { id: customerId } });
+      if (userRecord && userRecord.role === "OWNER") {
+        return NextResponse.json(
+          { error: "সেলুন মালিক অ্যাকাউন্ট থেকে কাস্টমার সিরিয়াল বুকিং করা সম্ভব নয়।" },
+          { status: 403 }
+        );
+      }
+    }
+
     const todayStr = new Date().toISOString().split("T")[0];
 
     // Rule FR-BOOK-02: Each phone number is restricted to maximum 1 active live queue booking globally at any given time.

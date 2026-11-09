@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { hashPassword } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
@@ -8,6 +9,7 @@ export async function POST(request: Request) {
     const code = String(body.code || "").trim();
     const requestedRole = (body.role || "CUSTOMER").toUpperCase(); // "CUSTOMER" or "OWNER"
     const name = body.name ? String(body.name).trim() : null;
+    const password = body.password ? String(body.password).trim() : null;
 
     if (!rawPhone || !code) {
       return NextResponse.json(
@@ -44,6 +46,8 @@ export async function POST(request: Request) {
       isValid = true;
     }
 
+    const passwordHash = password ? hashPassword(password) : undefined;
+
     // Find or create user
     let user = await prisma.user.findUnique({
       where: { phone: rawPhone },
@@ -55,46 +59,51 @@ export async function POST(request: Request) {
           phone: rawPhone,
           name: name || (requestedRole === "OWNER" ? "সেলুন পার্টনার" : "সম্মানিত গ্রাহক"),
           role: requestedRole === "OWNER" ? "OWNER" : "CUSTOMER",
+          passwordHash: passwordHash || null,
           languagePref: "bn",
           status: "ACTIVE",
         },
       });
     } else {
+      const updateData: any = {};
       // If user logs in through owner portal and was customer, or updating role
       if (requestedRole === "OWNER" && user.role === "CUSTOMER") {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { role: "OWNER" },
-        });
+        updateData.role = "OWNER";
       }
-      if (name && !user.name) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { name },
-        });
+        if (name && (!user.name || user.name === "সম্মানিত গ্রাহক")) {
+          updateData.name = name;
+        }
+        if (passwordHash) {
+          updateData.passwordHash = passwordHash;
+        }
+        if (Object.keys(updateData).length > 0) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          });
+        }
       }
+
+      // Clean up used OTPs
+      await prisma.otpVerification.deleteMany({
+        where: { phone: rawPhone },
+      });
+
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: user.id,
+          phone: user.phone,
+          name: user.name,
+          role: user.role,
+          languagePref: user.languagePref,
+        },
+      });
+    } catch (error: any) {
+      console.error("OTP verification error:", error);
+      return NextResponse.json(
+        { error: "ওটিপি যাচাই করতে সমস্যা হয়েছে।" },
+        { status: 500 }
+      );
     }
-
-    // Clean up used OTPs
-    await prisma.otpVerification.deleteMany({
-      where: { phone: rawPhone },
-    });
-
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        name: user.name,
-        role: user.role,
-        languagePref: user.languagePref,
-      },
-    });
-  } catch (error: any) {
-    console.error("OTP verification error:", error);
-    return NextResponse.json(
-      { error: "ওটিপি যাচাই করতে সমস্যা হয়েছে।" },
-      { status: 500 }
-    );
   }
-}

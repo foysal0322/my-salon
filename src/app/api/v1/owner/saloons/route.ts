@@ -76,168 +76,168 @@ export async function POST(request: Request) {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const slug = `${baseSlug}-${randomSuffix}`;
 
-        // System automatically assigns unique minimum 4-digit code (starting sequentially from 1051)
-        // Rule: IDs 1001-1050 are strictly reserved for Super Admin manual assignment.
-        const allSalons = await prisma.saloon.findMany({ select: { code: true } as any });
-        let maxCode = 1050; // Starts from 1051 for owner self-registrations
-        for (const s of allSalons) {
-          if ((s as any).code) {
-            const num = parseInt((s as any).code, 10);
-            if (!isNaN(num) && num >= 1051 && num > maxCode) maxCode = num;
-          }
-        }
-        const code = (maxCode + 1).toString();
-
-        const now = new Date();
-        // Rule FR-SUB-01: 30-Day Free Trial
-        const trialEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-        const initialChairStates = Array.from({ length: Number(totalChairs) }, (_, i) => ({
-          chairNo: i + 1,
-          isBusy: false,
-        }));
-
-        const salon = await prisma.saloon.create({
-          data: {
-            ownerId,
-            code,
-            slug,
-            nameBn,
-            nameEn,
-            category,
-            isAc: Boolean(isAc),
-            acceptsDigitalPayment: Boolean(acceptsDigitalPayment),
-            address,
-            phone,
-            email: email || null,
-            totalChairs: Number(totalChairs),
-            busyChairs: 0,
-            chairStates: JSON.stringify(initialChairStates),
-            manualQueueCount: 0,
-            currentServingToken: 0,
-            status: "ACTIVE",
-            trialEndsAt,
-            latitude: Number(latitude),
-            longitude: Number(longitude),
-            coverImage: coverImage ? String(coverImage).trim() : null,
-          },
-        });
-
-        // Seed default common services for rapid setup
-        const defaultServices = [
-          { nameBn: "চুল কাটা", nameEn: "Hair Cutting", price: 200, durationMins: 25 },
-          { nameBn: "দাড়ি শেভ ও ট্রিম", nameEn: "Beard Shave & Trim", price: 120, durationMins: 15 },
-          { nameBn: "হেড ম্যাসাজ", nameEn: "Head Massage", price: 250, durationMins: 20 },
-        ];
-
-        for (const s of defaultServices) {
-          await prisma.salonService.create({
-            data: {
-              saloonId: salon.id,
-              nameBn: s.nameBn,
-              nameEn: s.nameEn,
-              price: s.price,
-              durationMins: s.durationMins,
-            },
-          });
-        }
-
-        return NextResponse.json({
-          success: true,
-          message: "নতুন সেলুন শাখা সফলভাবে তৈরি হয়েছে!",
-          salon,
-        });
-      } catch (error: any) {
-        console.error("Owner salon creation error:", error);
-        return NextResponse.json(
-          { error: "সেলুন তৈরি করতে সমস্যা হয়েছে।" },
-          { status: 500 }
-        );
+    // System automatically assigns unique minimum 4-digit code (starting sequentially from 1051)
+    // Rule: IDs 1001-1050 are strictly reserved for Super Admin manual assignment.
+    const allSalons = await prisma.saloon.findMany({ select: { code: true } as any });
+    let maxCode = 1050; // Starts from 1051 for owner self-registrations
+    for (const s of allSalons) {
+      if ((s as any).code) {
+        const num = parseInt((s as any).code, 10);
+        if (!isNaN(num) && num >= 1051 && num > maxCode) maxCode = num;
       }
     }
+    const code = (maxCode + 1).toString();
 
-    export async function PUT(request: Request) {
+    const now = new Date();
+    // Rule FR-SUB-01: 30-Day Free Trial
+    const trialEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    const initialChairStates = Array.from({ length: Number(totalChairs) }, (_, i) => ({
+      chairNo: i + 1,
+      isBusy: false,
+    }));
+
+    const salon = await prisma.saloon.create({
+      data: {
+        ownerId,
+        code,
+        slug,
+        nameBn,
+        nameEn,
+        category,
+        isAc: Boolean(isAc),
+        acceptsDigitalPayment: Boolean(acceptsDigitalPayment),
+        address,
+        phone,
+        email: email || null,
+        totalChairs: Number(totalChairs),
+        busyChairs: 0,
+        chairStates: JSON.stringify(initialChairStates),
+        manualQueueCount: 0,
+        currentServingToken: 0,
+        status: "ACTIVE",
+        trialEndsAt,
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        coverImage: coverImage ? String(coverImage).trim() : null,
+      },
+    });
+
+    // Seed default common services for rapid setup
+    const defaultServices = [
+      { nameBn: "চুল কাটা", nameEn: "Hair Cutting", price: 200, durationMins: 25 },
+      { nameBn: "দাড়ি শেভ ও ট্রিম", nameEn: "Beard Shave & Trim", price: 120, durationMins: 15 },
+      { nameBn: "হেড ম্যাসাজ", nameEn: "Head Massage", price: 250, durationMins: 20 },
+    ];
+
+    for (const s of defaultServices) {
+      await prisma.salonService.create({
+        data: {
+          saloonId: salon.id,
+          nameBn: s.nameBn,
+          nameEn: s.nameEn,
+          price: s.price,
+          durationMins: s.durationMins,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "নতুন সেলুন শাখা সফলভাবে তৈরি হয়েছে!",
+      salon,
+    });
+  } catch (error: any) {
+    console.error("Owner salon creation error:", error);
+    return NextResponse.json(
+      { error: "সেলুন তৈরি করতে সমস্যা হয়েছে।" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const id = body.id || body.saloonId;
+    const {
+      nameBn,
+      nameEn,
+      category,
+      isAc,
+      acceptsDigitalPayment,
+      address,
+      phone,
+      totalChairs,
+      latitude,
+      longitude,
+      coverImage,
+    } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "সেলুন আইডি প্রদান করুন।" },
+        { status: 400 }
+      );
+    }
+
+    const currentSalon = await prisma.saloon.findUnique({
+      where: { id },
+    });
+
+    if (!currentSalon) {
+      return NextResponse.json(
+        { error: "সেলুন খুঁজে পাওয়া যায়নি।" },
+        { status: 404 }
+      );
+    }
+
+    // If total chairs changed, re-sync chairStates array
+    let updatedChairStates = currentSalon.chairStates;
+    const newTotal = totalChairs ? Number(totalChairs) : currentSalon.totalChairs;
+    if (newTotal !== currentSalon.totalChairs) {
+      let currentStates: any[] = [];
       try {
-        const body = await request.json();
-        const id = body.id || body.saloonId;
-        const {
-          nameBn,
-          nameEn,
-          category,
-          isAc,
-          acceptsDigitalPayment,
-          address,
-          phone,
-          totalChairs,
-          latitude,
-          longitude,
-          coverImage,
-        } = body;
+        currentStates = JSON.parse(currentSalon.chairStates);
+      } catch (e) { }
 
-        if (!id) {
-          return NextResponse.json(
-            { error: "সেলুন আইডি প্রদান করুন।" },
-            { status: 400 }
-          );
-        }
-
-        const currentSalon = await prisma.saloon.findUnique({
-          where: { id },
-        });
-
-        if (!currentSalon) {
-          return NextResponse.json(
-            { error: "সেলুন খুঁজে পাওয়া যায়নি।" },
-            { status: 404 }
-          );
-        }
-
-        // If total chairs changed, re-sync chairStates array
-        let updatedChairStates = currentSalon.chairStates;
-        const newTotal = totalChairs ? Number(totalChairs) : currentSalon.totalChairs;
-        if (newTotal !== currentSalon.totalChairs) {
-          let currentStates: any[] = [];
-          try {
-            currentStates = JSON.parse(currentSalon.chairStates);
-          } catch (e) { }
-
-          const newStates = Array.from({ length: newTotal }, (_, i) => {
-            const existing = currentStates.find((c) => c.chairNo === i + 1);
-            return existing || { chairNo: i + 1, isBusy: false };
-          });
-          updatedChairStates = JSON.stringify(newStates);
-        }
-
-        const updated = await prisma.saloon.update({
-          where: { id },
-          data: {
-            nameBn: nameBn ?? currentSalon.nameBn,
-            nameEn: nameEn ?? currentSalon.nameEn,
-            category: category ?? currentSalon.category,
-            isAc: isAc !== undefined ? Boolean(isAc) : currentSalon.isAc,
-            acceptsDigitalPayment: acceptsDigitalPayment !== undefined ? Boolean(acceptsDigitalPayment) : currentSalon.acceptsDigitalPayment,
-            address: address ?? currentSalon.address,
-            phone: phone ?? currentSalon.phone,
-            totalChairs: newTotal,
-            chairStates: updatedChairStates,
-            latitude: latitude !== undefined ? Number(latitude) : currentSalon.latitude,
-            longitude: longitude !== undefined ? Number(longitude) : currentSalon.longitude,
-            coverImage: coverImage ?? currentSalon.coverImage,
-          },
-        });
-
-        return NextResponse.json({
-          success: true,
-          message: "সেলুনের তথ্য সফলভাবে আপডেট হয়েছে।",
-          salon: updated,
-        });
-      } catch (error: any) {
-        console.error("Salon update error:", error);
-        return NextResponse.json(
-          { error: "সেলুন আপডেট করতে সমস্যা হয়েছে।" },
-          { status: 500 }
-        );
-      }
+      const newStates = Array.from({ length: newTotal }, (_, i) => {
+        const existing = currentStates.find((c) => c.chairNo === i + 1);
+        return existing || { chairNo: i + 1, isBusy: false };
+      });
+      updatedChairStates = JSON.stringify(newStates);
     }
 
-    export const PATCH = PUT;
+    const updated = await prisma.saloon.update({
+      where: { id },
+      data: {
+        nameBn: nameBn ?? currentSalon.nameBn,
+        nameEn: nameEn ?? currentSalon.nameEn,
+        category: category ?? currentSalon.category,
+        isAc: isAc !== undefined ? Boolean(isAc) : currentSalon.isAc,
+        acceptsDigitalPayment: acceptsDigitalPayment !== undefined ? Boolean(acceptsDigitalPayment) : currentSalon.acceptsDigitalPayment,
+        address: address ?? currentSalon.address,
+        phone: phone ?? currentSalon.phone,
+        totalChairs: newTotal,
+        chairStates: updatedChairStates,
+        latitude: latitude !== undefined ? Number(latitude) : currentSalon.latitude,
+        longitude: longitude !== undefined ? Number(longitude) : currentSalon.longitude,
+        coverImage: coverImage ?? currentSalon.coverImage,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "সেলুনের তথ্য সফলভাবে আপডেট হয়েছে।",
+      salon: updated,
+    });
+  } catch (error: any) {
+    console.error("Salon update error:", error);
+    return NextResponse.json(
+      { error: "সেলুন আপডেট করতে সমস্যা হয়েছে।" },
+      { status: 500 }
+    );
+  }
+}
+
+export const PATCH = PUT;

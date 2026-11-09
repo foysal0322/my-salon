@@ -18,7 +18,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "আমার সেলুন (AmarSaloon) — স্মার্ট সেলুন বুকিং ও লাইভ সিরিয়াল",
+  title: "আমার সেলুন (AmarSalon) — স্মার্ট সেলুন বুকিং ও লাইভ সিরিয়াল",
   description:
     "বাংলাদেশের সেরা সেলুন ও বিউটি পার্লার খুঁজুন, রিয়েল-টাইম চেয়ারের অবস্থা দেখুন এবং ঘরে বসেই লাইভ সিরিয়াল নিন।",
   manifest: "/manifest.json",
@@ -54,6 +54,23 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var savedTheme = localStorage.getItem('amarsalon_theme') || localStorage.getItem('amarsaloon_theme');
+                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -107,7 +124,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="min-h-full flex flex-col font-sans bg-[#FAF9F6] text-[#0F172A]"
+        className="min-h-full flex flex-col font-sans bg-[#FAF9F6] text-[#0F172A] dark:bg-slate-950 dark:text-slate-100 transition-colors"
         style={{
           fontFamily:
             "var(--font-hind-siliguri), var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",

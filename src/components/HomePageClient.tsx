@@ -19,6 +19,7 @@ import {
   Zap,
   SlidersHorizontal,
   RotateCcw,
+  Store,
 } from "lucide-react";
 
 export default function HomePageClient({
@@ -26,7 +27,8 @@ export default function HomePageClient({
 }: {
   initialSaloons?: SalonItem[];
 }) {
-  const { lang, t, favorites, toggleFavorite, triggerHaptic } = useApp();
+  const { lang, t, user, activeSalonId, favorites, toggleFavorite, triggerHaptic } = useApp();
+  const isOwner = user?.role === "OWNER";
 
   const [saloons, setSaloons] = useState<SalonItem[]>(initialSaloons);
   const [loading, setLoading] = useState(initialSaloons.length === 0);
@@ -230,11 +232,10 @@ export default function HomePageClient({
                 triggerHaptic(20);
                 setSelectedCategories([]);
               }}
-              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${
-                selectedCategories.length === 0
-                  ? "bg-teal-700 text-white shadow-xs"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
+              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${selectedCategories.length === 0
+                ? "bg-teal-700 text-white shadow-xs"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
             >
               {selectedCategories.length === 0 && <Check className="w-3 h-3" />}
               <span>{lang === "bn" ? "সকল ক্যাটাগরি" : "All"}</span>
@@ -244,11 +245,10 @@ export default function HomePageClient({
             <button
               type="button"
               onClick={() => toggleCategory("GENTS")}
-              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${
-                selectedCategories.includes("GENTS")
-                  ? "bg-teal-700 text-white shadow-xs"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
+              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${selectedCategories.includes("GENTS")
+                ? "bg-teal-700 text-white shadow-xs"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
             >
               {selectedCategories.includes("GENTS") && <Check className="w-3 h-3" />}
               <span>👨 {t.gents}</span>
@@ -258,11 +258,10 @@ export default function HomePageClient({
             <button
               type="button"
               onClick={() => toggleCategory("LADIES")}
-              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${
-                selectedCategories.includes("LADIES")
-                  ? "bg-teal-700 text-white shadow-xs"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
+              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${selectedCategories.includes("LADIES")
+                ? "bg-teal-700 text-white shadow-xs"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
             >
               {selectedCategories.includes("LADIES") && <Check className="w-3 h-3" />}
               <span>👩 {t.ladies}</span>
@@ -272,11 +271,10 @@ export default function HomePageClient({
             <button
               type="button"
               onClick={() => toggleCategory("UNISEX")}
-              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${
-                selectedCategories.includes("UNISEX")
-                  ? "bg-teal-700 text-white shadow-xs"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
+              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${selectedCategories.includes("UNISEX")
+                ? "bg-teal-700 text-white shadow-xs"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
             >
               {selectedCategories.includes("UNISEX") && <Check className="w-3 h-3" />}
               <span>👥 {t.unisex}</span>
@@ -292,11 +290,10 @@ export default function HomePageClient({
                 triggerHaptic(20);
                 setFreeChairsFilter(!freeChairsFilter);
               }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${
-                freeChairsFilter
-                  ? "bg-emerald-600 text-white shadow-xs border border-emerald-600"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${freeChairsFilter
+                ? "bg-emerald-600 text-white shadow-xs border border-emerald-600"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
             >
               {freeChairsFilter ? (
                 <Check className="w-3 h-3" />
@@ -313,11 +310,10 @@ export default function HomePageClient({
                 triggerHaptic(20);
                 setIsAcFilter(!isAcFilter);
               }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${
-                isAcFilter
-                  ? "bg-teal-700 text-white shadow-xs border border-teal-700"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${isAcFilter
+                ? "bg-teal-700 text-white shadow-xs border border-teal-700"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
             >
               {isAcFilter ? (
                 <Check className="w-3 h-3" />
@@ -334,11 +330,10 @@ export default function HomePageClient({
                 triggerHaptic(20);
                 setZeroQueueFilter(!zeroQueueFilter);
               }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${
-                zeroQueueFilter
-                  ? "bg-amber-600 text-white shadow-xs border border-amber-600"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${zeroQueueFilter
+                ? "bg-amber-600 text-white shadow-xs border border-amber-600"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
             >
               {zeroQueueFilter ? (
                 <Check className="w-3 h-3" />
@@ -355,11 +350,10 @@ export default function HomePageClient({
                 triggerHaptic(20);
                 setDigitalPayFilter(!digitalPayFilter);
               }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${
-                digitalPayFilter
-                  ? "bg-indigo-600 text-white shadow-xs border border-indigo-600"
-                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${digitalPayFilter
+                ? "bg-indigo-600 text-white shadow-xs border border-indigo-600"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+                }`}
             >
               {digitalPayFilter ? (
                 <Check className="w-3 h-3" />
@@ -374,6 +368,29 @@ export default function HomePageClient({
 
       {/* Salons Feed */}
       <section className="px-4 py-3 flex-1 flex flex-col gap-3">
+        {isOwner && (
+          <div className="bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800/80 rounded-2xl p-3 flex items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0">
+                <Store className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-teal-900 dark:text-teal-200 truncate">
+                  {lang === "bn" ? "আপনি সেলুন মালিক হিসেবে লগইন আছেন" : "Logged in as Salon Owner"}
+                </p>
+                <p className="text-[10px] text-teal-700 dark:text-teal-400 truncate">
+                  {lang === "bn" ? "লাইভ চেয়ার ও কিউ পরিচালনা করতে মালিক প্যানেলে যান" : "Manage chairs and queues in Owner Console"}
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/owner/dashboard"
+              className="shrink-0 px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+            >
+              {lang === "bn" ? "মালিক কনসোল" : "Owner Console"}
+            </Link>
+          </div>
+        )}
         {loading ? (
           // Skeleton Loading
           Array.from({ length: 3 }).map((_, idx) => (
@@ -515,13 +532,33 @@ export default function HomePageClient({
 
                 {/* CTA */}
                 <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-end">
-                  <Link
-                    href={`/s/${salon.slug}`}
-                    className="inline-flex items-center gap-1 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
-                  >
-                    <span>{t.joinLiveQueue}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
+                  {isOwner ? (
+                    activeSalonId === salon.id || (user?.id && (salon as any).ownerId === user.id) ? (
+                      <Link
+                        href="/owner/dashboard"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-teal-700 hover:bg-teal-800 active:scale-95 text-white px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+                      >
+                        <Store className="w-3.5 h-3.5" />
+                        <span>{lang === "bn" ? "ম্যানেজ সেলুন" : "Manage Salon"}</span>
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/s/${salon.slug}`}
+                        className="inline-flex items-center gap-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+                      >
+                        <span>{lang === "bn" ? "বিস্তারিত দেখুন" : "View Details"}</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    )
+                  ) : (
+                    <Link
+                      href={`/s/${salon.slug}`}
+                      className="inline-flex items-center gap-1 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+                    >
+                      <span>{t.joinLiveQueue}</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
                 </div>
               </div>
             );

@@ -69,6 +69,7 @@ model User {
   id            String          @id @default(uuid())
   phone         String          @unique @db.VarChar(15)
   name          String?         @db.VarChar(100)
+  email         String?         @db.VarChar(150)
   passwordHash  String?
   role          Role            @default(CUSTOMER)
   languagePref  String          @default("bn") @db.VarChar(5)
@@ -93,8 +94,10 @@ model Saloon {
   nameEn             String          @db.VarChar(150)
   category           SalonCategory   @default(GENTS)
   isAc               Boolean         @default(false)
+  acceptsDigitalPayment Boolean      @default(true)
   address            String          @db.Text
   phone              String          @db.VarChar(15)
+  email              String?         @db.VarChar(150)
   latitude           Float
   longitude          Float
   totalChairs        Int             @default(3)

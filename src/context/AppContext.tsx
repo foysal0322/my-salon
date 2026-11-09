@@ -52,12 +52,16 @@ interface AppContextType {
   showNotificationToast: (toast: Omit<NotificationToast, "id">) => void;
   notificationsEnabled: boolean;
   requestNotifications: () => Promise<boolean>;
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
+  toggleTheme: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>("bn");
+  const [theme, setThemeState] = useState<"light" | "dark">("light");
   const [user, setUser] = useState<UserSession | null>(null);
   const [activeSalonId, setActiveSalonId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -74,29 +78,53 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Initialize from localStorage and check PWA mode & notifications
   useEffect(() => {
     try {
-      const savedLang = localStorage.getItem("amarsaloon_lang") as Language;
+      const savedLang = (localStorage.getItem("amarsalon_lang") || localStorage.getItem("amarsaloon_lang")) as Language;
       if (savedLang && (savedLang === "bn" || savedLang === "en")) {
         setLangState(savedLang);
       }
 
-      const savedUser = localStorage.getItem("amarsaloon_user");
+      // Initialize Theme
+      const savedTheme = (localStorage.getItem("amarsalon_theme") || localStorage.getItem("amarsaloon_theme")) as "light" | "dark" | null;
+      if (savedTheme === "dark" || savedTheme === "light") {
+        setThemeState(savedTheme);
+        if (savedTheme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      } else {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (prefersDark) {
+          setThemeState("dark");
+          document.documentElement.classList.add("dark");
+        } else {
+          setThemeState("light");
+          document.documentElement.classList.remove("dark");
+        }
+      }
+
+      const savedUser = localStorage.getItem("amarsalon_user") || localStorage.getItem("amarsaloon_user");
       if (savedUser) {
         setUser(JSON.parse(savedUser));
       }
 
-      const savedSalon = localStorage.getItem("amarsaloon_active_salon");
+      const savedSalon = localStorage.getItem("amarsalon_active_salon") || localStorage.getItem("amarsaloon_active_salon");
       if (savedSalon) {
         setActiveSalonId(savedSalon);
       }
 
       const savedActiveBooking =
+        localStorage.getItem("amarsalon_active_booking_id") ||
         localStorage.getItem("amarsaloon_active_booking_id") ||
+        localStorage.getItem("amarsalon_last_booking_id") ||
         localStorage.getItem("amarsaloon_last_booking_id");
       if (savedActiveBooking) {
         setActiveBookingIdState(savedActiveBooking);
       }
 
-      const bannerDismissed = localStorage.getItem("amarsaloon_banner_dismissed");
+      const bannerDismissed =
+        localStorage.getItem("amarsalon_banner_dismissed") ||
+        localStorage.getItem("amarsaloon_banner_dismissed");
       if (bannerDismissed === "true") {
         setShowInstallBanner(false);
       }
@@ -142,12 +170,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setActiveBookingIdState(id);
     try {
       if (id) {
-        localStorage.setItem("amarsaloon_active_booking_id", id);
-        localStorage.setItem("amarsaloon_last_booking_id", id);
+        localStorage.setItem("amarsalon_active_booking_id", id);
+        localStorage.setItem("amarsalon_last_booking_id", id);
       } else {
+        localStorage.removeItem("amarsalon_active_booking_id");
         localStorage.removeItem("amarsaloon_active_booking_id");
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   // Dismiss in-app toast
@@ -206,13 +235,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         // When user's serial is available / current turn
         if (isCurrentTurn) {
-          const alertedKey = `amarsaloon_alerted_${activeBookingId}`;
-          const alreadyAlerted = localStorage.getItem(alertedKey) === "true";
+          const alertedKey = `amarsalon_alerted_${activeBookingId}`;
+          const alreadyAlerted =
+            localStorage.getItem(alertedKey) === "true" ||
+            localStorage.getItem(`amarsaloon_alerted_${activeBookingId}`) === "true";
 
           if (!alreadyAlerted) {
             try {
               localStorage.setItem(alertedKey, "true");
-            } catch (e) {}
+            } catch (e) { }
 
             playNotificationChime("urgent");
             triggerDeviceHaptic([200, 100, 200, 100, 300]);
@@ -240,7 +271,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             });
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     };
 
     checkCustomerTurn();
@@ -301,7 +332,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         }
 
         prevOwnerWaitingCount.current = waiting.length;
-      } catch (e) {}
+      } catch (e) { }
     };
 
     checkOwnerLiveQueue();
@@ -322,33 +353,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             setFavorites(data.favorites);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     } else {
       try {
-        const guestFavs = localStorage.getItem("amarsaloon_guest_favs");
+        const guestFavs = localStorage.getItem("amarsalon_guest_favs") || localStorage.getItem("amarsaloon_guest_favs");
         if (guestFavs) {
           setFavorites(JSON.parse(guestFavs));
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [user]);
 
   const setLang = (newLang: Language) => {
     setLangState(newLang);
     try {
-      localStorage.setItem("amarsaloon_lang", newLang);
-    } catch (e) {}
+      localStorage.setItem("amarsalon_lang", newLang);
+    } catch (e) { }
   };
 
   const handleSetUser = (newUser: UserSession | null) => {
     setUser(newUser);
     try {
       if (newUser) {
-        localStorage.setItem("amarsaloon_user", JSON.stringify(newUser));
+        localStorage.setItem("amarsalon_user", JSON.stringify(newUser));
       } else {
+        localStorage.removeItem("amarsalon_user");
         localStorage.removeItem("amarsaloon_user");
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const handleSetActiveSalon = (id: string | null) => {
@@ -356,11 +388,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     prevOwnerWaitingCount.current = null;
     try {
       if (id) {
-        localStorage.setItem("amarsaloon_active_salon", id);
+        localStorage.setItem("amarsalon_active_salon", id);
       } else {
+        localStorage.removeItem("amarsalon_active_salon");
         localStorage.removeItem("amarsaloon_active_salon");
       }
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const logout = () => {
@@ -382,11 +415,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ userId: user.id, saloonId: salonId, action: isFav ? "remove" : "add" }),
         });
-      } catch (e) {}
+      } catch (e) { }
     } else {
       try {
-        localStorage.setItem("amarsaloon_guest_favs", JSON.stringify(updated));
-      } catch (e) {}
+        localStorage.setItem("amarsalon_guest_favs", JSON.stringify(updated));
+      } catch (e) { }
     }
     return !isFav;
   };
@@ -412,8 +445,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const dismissInstallBanner = () => {
     setShowInstallBanner(false);
     try {
-      localStorage.setItem("amarsaloon_banner_dismissed", "true");
-    } catch (e) {}
+      localStorage.setItem("amarsalon_banner_dismissed", "true");
+    } catch (e) { }
   };
 
   const playChime = () => {
@@ -422,6 +455,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const triggerHaptic = (ms = 40) => {
     triggerDeviceHaptic(ms);
+  };
+
+  const setTheme = (newTheme: "light" | "dark") => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem("amarsalon_theme", newTheme);
+      if (newTheme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    } catch (e) { }
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -451,6 +500,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         showNotificationToast,
         notificationsEnabled,
         requestNotifications,
+        theme,
+        setTheme,
+        toggleTheme,
       }}
     >
       {children}

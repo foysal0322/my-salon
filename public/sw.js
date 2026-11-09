@@ -1,4 +1,4 @@
-const CACHE_NAME = "amarsaloon-v1";
+const CACHE_NAME = "amarsalon-v1";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
@@ -66,7 +66,7 @@ self.addEventListener("fetch", (event) => {
                 });
               }
             })
-            .catch(() => {});
+            .catch(() => { });
           return cachedResponse;
         }
         return fetch(event.request);

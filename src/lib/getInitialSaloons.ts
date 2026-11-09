@@ -8,6 +8,7 @@ export interface SalonItem {
   nameEn: string;
   category: "GENTS" | "LADIES" | "UNISEX";
   isAc: boolean;
+  acceptsDigitalPayment?: boolean;
   address: string;
   phone: string;
   totalChairs: number;
@@ -74,6 +75,7 @@ export async function getInitialSaloons(): Promise<SalonItem[]> {
         nameEn: s.nameEn,
         category: s.category as "GENTS" | "LADIES" | "UNISEX",
         isAc: s.isAc,
+        acceptsDigitalPayment: s.acceptsDigitalPayment,
         address: s.address,
         phone: s.phone,
         totalChairs: s.totalChairs,

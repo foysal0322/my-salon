@@ -20,9 +20,11 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get("category"); // GENTS, LADIES, UNISEX
+    const categoryParam = searchParams.get("category"); // GENTS, LADIES, UNISEX (supports comma-separated e.g. "GENTS,LADIES")
     const isAcParam = searchParams.get("isAc");
     const freeChairsParam = searchParams.get("freeChairs");
+    const digitalPaymentParam = searchParams.get("digitalPayment");
+    const zeroQueueParam = searchParams.get("zeroQueue");
     const search = searchParams.get("search")?.trim().toLowerCase();
     const latParam = searchParams.get("lat");
     const lngParam = searchParams.get("lng");
@@ -38,14 +40,28 @@ export async function GET(request: Request) {
       ],
     };
 
-    if (category && ["GENTS", "LADIES", "UNISEX"].includes(category.toUpperCase())) {
-      whereClause.category = category.toUpperCase();
+    if (categoryParam) {
+      const validCategories = ["GENTS", "LADIES", "UNISEX"];
+      const requested = categoryParam
+        .split(",")
+        .map((c) => c.trim().toUpperCase())
+        .filter((c) => validCategories.includes(c));
+
+      if (requested.length === 1) {
+        whereClause.category = requested[0];
+      } else if (requested.length > 1) {
+        whereClause.category = { in: requested };
+      }
     }
 
     if (isAcParam === "true") {
       whereClause.isAc = true;
     } else if (isAcParam === "false") {
       whereClause.isAc = false;
+    }
+
+    if (digitalPaymentParam === "true") {
+      whereClause.acceptsDigitalPayment = true;
     }
 
     // Fetch matching salons
@@ -91,6 +107,11 @@ export async function GET(request: Request) {
       saloons = saloons.filter((s) => s.totalChairs > s.busyChairs);
     }
 
+    // Apply zero waiting / no queue filter
+    if (zeroQueueParam === "true") {
+      saloons = saloons.filter((s) => (s.manualQueueCount + s._count.bookings) === 0);
+    }
+
     // Map enriched stats and calculate distances if coordinates provided
     const userLat = latParam ? parseFloat(latParam) : null;
     const userLng = lngParam ? parseFloat(lngParam) : null;
@@ -114,6 +135,7 @@ export async function GET(request: Request) {
         nameEn: s.nameEn,
         category: s.category,
         isAc: s.isAc,
+        acceptsDigitalPayment: s.acceptsDigitalPayment,
         address: s.address,
         phone: s.phone,
         latitude: s.latitude,

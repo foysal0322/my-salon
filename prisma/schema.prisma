@@ -67,6 +67,7 @@ model User {
   id           String          @id @default(uuid())
   phone        String          @unique
   name         String?
+  email        String?
   passwordHash String?         // Used for ADMIN role or owner password login fallback
   role         Role            @default(CUSTOMER)
   languagePref String          @default("bn")
@@ -91,8 +92,10 @@ model Saloon {
   nameEn              String
   category            SalonCategory   @default(GENTS)
   isAc                Boolean         @default(false)
+  acceptsDigitalPayment Boolean       @default(true)
   address             String
   phone               String
+  email               String?
   latitude            Float
   longitude           Float
   totalChairs         Int             @default(3)

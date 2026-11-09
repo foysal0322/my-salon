@@ -9,6 +9,7 @@ export async function GET() {
         saloon: {
           select: {
             id: true,
+            code: true,
             nameBn: true,
             nameEn: true,
             phone: true,

@@ -1,5 +1,5 @@
 /**
- * Unified notification helper for Amar Saloon:
+ * Unified notification helper for Amar Salon:
  * - Browser Web Notifications (desktop & mobile push/lock screen)
  * - Audio synthesized chime alert (Web Audio API)
  * - Haptic vibration feedback
@@ -54,7 +54,7 @@ export const sendBrowserNotification = (
             window.focus();
             window.location.href = options.url!;
             notif.close();
-          } catch (e) {}
+          } catch (e) { }
         };
       }
       return notif;
@@ -134,5 +134,5 @@ export const triggerDeviceHaptic = (pattern: number | number[] = 50) => {
     if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
       window.navigator.vibrate(pattern);
     }
-  } catch (e) {}
+  } catch (e) { }
 };

@@ -290,6 +290,8 @@ function OwnerProfileContent() {
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
           if (ctx) {
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = "high";
@@ -300,6 +302,7 @@ function OwnerProfileContent() {
           const res = await fetch("/api/v1/upload", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl, folder: "salons" }),
             body: JSON.stringify({ dataUrl, image: dataUrl, folder: "salons" }),
           });
           const data = await res.json();
@@ -979,436 +982,453 @@ function OwnerProfileContent() {
               />
             </div>
 
+            {/* Category */}
             {/* GPS Location Field & Button */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                  <span>{lang === "bn" ? "GPS লোকেশন (অক্ষাংশ ও দ্রাঘিমাংশ)" : "GPS Location (Lat, Lng)"}</span>
-                </label>
-                {latitude && longitude && (
-                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                    ✓ {lang === "bn" ? "সংরক্ষিত" : "Saved"}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    readOnly
-                    value={
-                      latitude && longitude
-                        ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
-                        : ""
-                    }
-                    placeholder={lang === "bn" ? "যেমন: 23.746500, 90.376800" : "e.g. 23.746500, 90.376800"}
-                    className="w-full text-xs font-mono font-bold bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleGetCurrentLocation}
-                  disabled={locatingGps}
-                  className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-60"
-                  title={lang === "bn" ? "বর্তমান GPS লোকেশন নিন" : "Get Current Location"}
-                >
-                  <Navigation className={`w-3.5 h-3.5 ${locatingGps ? "animate-spin" : ""}`} />
-                  <span>
-                    {locatingGps
-                      ? (lang === "bn" ? "লোকেশন খোঁজা হচ্ছে..." : "Locating...")
-                      : (lang === "bn" ? "GPS লোকেশন নিন" : "Get GPS")}
-                  </span>
-                </button>
-              </div>
-
-              {gpsSuccessMsg && (
-                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
-                  {gpsSuccessMsg}
-                </p>
-              )}
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                {lang === "bn"
-                  ? "সেলুনে অবস্থানকালীন এই বাটনে চাপ দিন যাতে কাস্টমাররা ম্যাপে সেলুনের সঠিক দূরত্ব দেখতে পায়।"
-                  : "Tap while at your salon so customers see accurate distance on search and maps."}
-              </p>
-            </div>
-
-            {/* Category (Mobile-Friendly Touch Pills + Styled Dropdown) */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                {t.categoryLabel || (lang === "bn" ? "সেলুনের ধরন / ক্যাটাগরি" : "Salon Category")}
-              </label>
-
-              {/* Mobile-Friendly Touch Pills */}
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                {[
-                  { id: "GENTS", labelBn: "জেন্টস", labelEn: "Gents", icon: "👨" },
-                  { id: "LADIES", labelBn: "লেডিস", labelEn: "Ladies", icon: "👩" },
-                  { id: "UNISEX", labelBn: "ইউনিসেক্স", labelEn: "Unisex", icon: "👥" },
-                ].map((cat) => {
-                  const isSelected = category === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic(15);
-                        setCategory(cat.id);
-                      }}
-                      className={`py-2 px-1.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
-                        isSelected
-                          ? "bg-teal-50 dark:bg-teal-950/60 border-teal-600 text-teal-800 dark:text-teal-200 shadow-xs ring-1 ring-teal-500/20"
-                          : "bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600/60"
-                      }`}
-                    >
-                      <span className="text-sm leading-none">{cat.icon}</span>
-                      <span className="text-[11px]">{lang === "bn" ? cat.labelBn : cat.labelEn}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Enhanced Mobile-friendly Select Dropdown */}
-              <div className="relative">
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full text-xs font-semibold bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 appearance-none cursor-pointer dark:text-white pr-9 shadow-2xs"
-                >
-                  <option value="GENTS">👨 {t.gents}</option>
-                  <option value="LADIES">👩 {t.ladies}</option>
-                  <option value="UNISEX">👥 {t.unisex}</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400">
-                  <ChevronDown className="w-4 h-4" />
-                </div>
-              </div>
-            </div>
-
-            {/* Total Chairs */}
-            <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                {lang === "bn" ? "মোট চেয়ার সংখ্যা" : "Total Chairs"}
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={totalChairs}
-                  onChange={(e) => setTotalChairs(Number(e.target.value))}
-                  className="w-24 text-sm font-bold text-center bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                />
-                <span className="text-xs text-slate-500">টি চেয়ার প্রস্তুত রয়েছে</span>
-              </div>
-            </div>
-
-            {/* AC / Non-AC & Digital Payment Options */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-3">
-              <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200/80 dark:border-slate-600 cursor-pointer">
-                <div>
-                  <span className="text-xs font-bold text-slate-800 dark:text-white block">
-                    এয়ার কন্ডিশনড (AC) সেলুন
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    সেলুনে এসি সুবিধা থাকলে এটি চালু রাখুন
-                  </span>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={isAc}
-                  onChange={(e) => setIsAc(e.target.checked)}
-                  className="w-4 h-4 accent-teal-600 rounded cursor-pointer"
-                />
-              </label>
-
-              <label className="flex items-center justify-between p-3 rounded-2xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/80 dark:border-teal-800/40 cursor-pointer">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center">
-                    <Smartphone className="w-4 h-4" />
-                  </div>
+                {t.categoryLabel || (lang === "bn" ? "ক্যাটাগরি" : "Category")}
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    <span>{lang === "bn" ? "GPS লোকেশন (অক্ষাংশ ও দ্রাঘিমাংশ)" : "GPS Location (Lat, Lng)"}</span>
+                  </label>
+                  {/* GPS Location Field & Button */}
                   <div>
-                    <span className="text-xs font-bold text-teal-900 dark:text-teal-200 block">
-                      {lang === "bn" ? "ডিজিটাল পেমেন্ট গ্রহণ করা হয়" : "Digital Payment Accepted"}
-                    </span>
-                    <span className="text-[10px] text-teal-700 dark:text-teal-300">
-                      {lang === "bn" ? "বিকাশ, নগদ বা কার্ড পেমেন্ট সুবিধা" : "bKash, Nagad or Card payments available"}
-                    </span>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={acceptsDigitalPayment}
-                  onChange={(e) => setAcceptsDigitalPayment(e.target.checked)}
-                  className="w-4 h-4 accent-teal-600 rounded cursor-pointer"
-                />
-              </label>
-            </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                        <span>{lang === "bn" ? "GPS লোকেশন (অক্ষাংশ ও দ্রাঘিমাংশ)" : "GPS Location (Lat, Lng)"}</span>
+                      </label>
+                      {latitude && longitude && (
+                        <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                          ✓ {lang === "bn" ? "সংরক্ষিত" : "Saved"}
+                        </span>
+                      )}
+                    </div>
 
-            <button
-              type="submit"
-              disabled={updatingProfile}
-              className="w-full py-3 rounded-xl font-bold text-sm bg-teal-700 hover:bg-teal-800 text-white shadow-md transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>{updatingProfile ? t.loading : t.save}</span>
-            </button>
-          </form>
-        )}
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          readOnly
+                          value={
+                            latitude && longitude
+                              ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+                              : ""
+                          }
+                          placeholder={lang === "bn" ? "যেমন: 23.746500, 90.376800" : "e.g. 23.746500, 90.376800"}
+                          className="w-full text-xs font-mono font-bold bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                        />
+                      </div>
 
-        {/* TAB 3: SUBSCRIPTION */}
-        {activeTab === "sub" && (
-          <div className="space-y-4">
-            {/* Status Card */}
-            <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-xs">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                    {t.subscriptionStatus}
-                  </span>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
-                    {subStatus?.status === "ACTIVE" ? (
-                      <span className="text-emerald-700 flex items-center gap-1">
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>সক্রিয় (Active)</span>
-                      </span>
-                    ) : subStatus?.status === "PENDING" ? (
-                      <span className="text-amber-700 flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        <span>অনুমোদনের অপেক্ষায় (Pending Verification)</span>
-                      </span>
-                    ) : (
-                      <span className="text-rose-700 flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>মেয়াদোত্তীর্ণ (Expired / Inactive)</span>
-                      </span>
+                      <button
+                        type="button"
+                        onClick={handleGetCurrentLocation}
+                        disabled={locatingGps}
+                        className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-60"
+                        title={lang === "bn" ? "বর্তমান GPS লোকেশন নিন" : "Get Current Location"}
+                      >
+                        <Navigation className={`w-3.5 h-3.5 ${locatingGps ? "animate-spin" : ""}`} />
+                        <span>
+                          {locatingGps
+                            ? (lang === "bn" ? "লোকেশন খোঁজা হচ্ছে..." : "Locating...")
+                            : (lang === "bn" ? "GPS লোকেশন নিন" : "Get GPS")}
+                        </span>
+                      </button>
+                    </div>
+
+                    {gpsSuccessMsg && (
+                      <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                        {gpsSuccessMsg}
+                      </p>
                     )}
-                  </h3>
-                </div>
-
-                {subStatus?.daysRemaining !== undefined && (
-                  <div className="text-right">
-                    <span className="text-xl font-black text-teal-800 dark:text-teal-300">
-                      {subStatus.daysRemaining}
-                    </span>
-                    <span className="text-[11px] text-slate-500 block">দিন বাকি</span>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                      {lang === "bn"
+                        ? "সেলুনে অবস্থানকালীন এই বাটনে চাপ দিন যাতে কাস্টমাররা ম্যাপে সেলুনের সঠিক দূরত্ব দেখতে পায়।"
+                        : "Tap while at your salon so customers see accurate distance on search and maps."}
+                    </p>
                   </div>
-                )}
-              </div>
 
-              {subStatus?.expiresAt && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
-                  মেয়াদ শেষ: {new Date(subStatus.expiresAt).toLocaleDateString("bn-BD")}
-                </p>
-              )}
-            </div>
-
-            {/* Plan Selector */}
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("MONTHLY")}
-                className={`p-4 rounded-2xl border text-left transition cursor-pointer relative ${selectedPlan === "MONTHLY"
-                  ? "bg-teal-50/70 border-teal-600 shadow-xs"
-                  : "bg-white border-slate-200/80 hover:bg-slate-50"
-                  }`}
-              >
-                <span className="text-xs font-bold text-slate-700 block">মাসিক প্ল্যান</span>
-                <p className="text-lg font-black text-teal-900 mt-1">৳৯৯</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">প্রতি মাস (৩০ দিন)</p>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedPlan("YEARLY")}
-                className={`p-4 rounded-2xl border text-left transition cursor-pointer relative ${selectedPlan === "YEARLY"
-                  ? "bg-teal-50/70 border-teal-600 shadow-xs"
-                  : "bg-white border-slate-200/80 hover:bg-slate-50"
-                  }`}
-              >
-                <div className="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                  ১৫% ছাড়
-                </div>
-                <span className="text-xs font-bold text-slate-700 block">বার্ষিক প্ল্যান</span>
-                <p className="text-lg font-black text-teal-900 mt-1">৳১,০১০</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">৩৬৫ দিন সাশ্রয়ী</p>
-              </button>
-            </div>
-
-            {/* Payment Method & Submission */}
-            <form onSubmit={handleSubmitPayment} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-xs space-y-3.5">
-              <h3 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
-                {lang === "bn" ? "পেমেন্ট মাধ্যম বেছে নিন" : "Payment Method"}
-              </h3>
-
-              {paymentMsg && (
-                <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
-                  {paymentMsg}
-                </div>
-              )}
-              {paymentError && (
-                <div className="p-3 rounded-xl bg-rose-50 text-rose-800 text-xs border border-rose-200">
-                  {paymentError}
-                </div>
-              )}
-
-              {/* Methods */}
-              <div className="grid grid-cols-4 gap-1.5 text-center text-xs font-bold">
-                {(["BKASH", "NAGAD", "ROCKET", "BANK"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod(m);
-                      setPaymentError("");
-                    }}
-                    className={`py-2 px-1 rounded-xl border transition cursor-pointer text-[11px] ${paymentMethod === m
-                      ? "bg-teal-50 dark:bg-teal-950/40 border-teal-600 text-teal-900 dark:text-teal-200 font-extrabold"
-                      : "bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
-                      }`}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-
-              {/* Instructions */}
-              {paymentMethod === "BANK" ? (
-                <div className="bg-slate-50 dark:bg-slate-700/40 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
-                  <p className="font-semibold text-slate-900 dark:text-white">ব্যাংক ডিপোজিট / ট্রান্সফার নির্দেশিকা:</p>
-                  <div className="font-mono text-[11px] space-y-0.5 bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-                    <p><span className="text-slate-400">ব্যাংক:</span> Dutch Bangla Bank / BRAC Bank</p>
-                    <p><span className="text-slate-400">হিসাবের নাম:</span> AmarSalon Technologies Ltd</p>
-                    <p><span className="text-slate-400">হিসাব নম্বর:</span> 151.120.482910</p>
-                    <p><span className="text-slate-400">শাখা / রাউটিং:</span> Dhanmondi Branch (090271829)</p>
-                  </div>
-                  <p className="text-[11px] text-slate-500">
-                    ব্যাংক ট্রান্সফারের পর নিচে ব্যাংকের নাম, অ্যাকাউন্টের নাম ও নম্বর প্রদান করুন।
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-slate-50 dark:bg-slate-700/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 space-y-1">
-                  <p className="font-semibold text-slate-900 dark:text-white">{t.mfsInstructions}</p>
-                  <p className="font-mono font-bold text-teal-800 dark:text-teal-300 text-sm">
-                    01700000000 (মার্চেন্ট / পারসোনাল)
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে লিখে জমা দিন।
-                  </p>
-                </div>
-              )}
-
-              {/* Conditional Bank Fields */}
-              {paymentMethod === "BANK" ? (
-                <div className="space-y-3">
+                  {/* Category (Mobile-Friendly Touch Pills + Styled Dropdown) */}
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {lang === "bn" ? "ব্যাংকের নাম" : "Bank Name"} <span className="text-rose-500">*</span>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                      {t.categoryLabel || (lang === "bn" ? "সেলুনের ধরন / ক্যাটাগরি" : "Salon Category")}
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      placeholder="যেমন: Dutch Bangla Bank / City Bank"
-                      className="w-full text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                    />
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {lang === "bn" ? "অ্যাকাউন্টের নাম" : "Account Name"} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={accountName}
-                      onChange={(e) => setAccountName(e.target.value)}
-                      placeholder="যেমন: Rahim Uddin / Salon Name"
-                      className="w-full text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                    />
-                  </div>
+                    {/* Mobile-Friendly Touch Pills */}
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      {[
+                        { id: "GENTS", labelBn: "জেন্টস", labelEn: "Gents", icon: "👨" },
+                        { id: "LADIES", labelBn: "লেডিস", labelEn: "Ladies", icon: "👩" },
+                        { id: "UNISEX", labelBn: "ইউনিসেক্স", labelEn: "Unisex", icon: "👥" },
+                      ].map((cat) => {
+                        const isSelected = category === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              triggerHaptic(15);
+                              setCategory(cat.id);
+                            }}
+                            className={`py-2 px-1.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${isSelected
+                              ? "bg-teal-50 dark:bg-teal-950/60 border-teal-600 text-teal-800 dark:text-teal-200 shadow-xs ring-1 ring-teal-500/20"
+                              : "bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600/60"
+                              }`}
+                          >
+                            <span className="text-sm leading-none">{cat.icon}</span>
+                            <span className="text-[11px]">{lang === "bn" ? cat.labelBn : cat.labelEn}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {lang === "bn" ? "অ্যাকাউন্ট নম্বর" : "Account Number"} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value)}
-                      placeholder="যে অ্যাকাউন্ট থেকে টাকা পাঠিয়েছেন"
-                      className="w-full text-sm font-mono bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                    />
-                  </div>
+                    {/* Enhanced Mobile-friendly Select Dropdown */}
+                    <div className="relative">
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none appearance-none cursor-pointer dark:text-white pr-8"
+                        className="w-full text-xs font-semibold bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 appearance-none cursor-pointer dark:text-white pr-9 shadow-2xs"
+                      >
+                        <option value="GENTS">{t.gents}</option>
+                        <option value="LADIES">{t.ladies}</option>
+                        <option value="UNISEX">{t.unisex}</option>
+                        <option value="GENTS">👨 {t.gents}</option>
+                        <option value="LADIES">👩 {t.ladies}</option>
+                        <option value="UNISEX">👥 {t.unisex}</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400">
+                          <ChevronDown className="w-4 h-4" />
+                        </div>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400">
+                          <ChevronDown className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Transaction ID / ডিপোজিট স্লিপ রেফারেন্স (ঐচ্ছিক)
-                    </label>
-                    <input
-                      type="text"
-                      value={trxId}
-                      onChange={(e) => setTrxId(e.target.value)}
-                      placeholder="যদি থাকে (যেমন: TXN18293)"
-                      className="w-full text-sm font-mono uppercase bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                    />
-                  </div>
+                    {/* Total Chairs */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        {lang === "bn" ? "মোট চেয়ার সংখ্যা" : "Total Chairs"}
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={totalChairs}
+                          onChange={(e) => setTotalChairs(Number(e.target.value))}
+                          className="w-24 text-sm font-bold text-center bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                        />
+                        <span className="text-xs text-slate-500">টি চেয়ার প্রস্তুত রয়েছে</span>
+                      </div>
+                    </div>
+
+                    {/* AC / Non-AC & Digital Payment Options */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-3">
+                      <label className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200/80 dark:border-slate-600 cursor-pointer">
+                        <div>
+                          <span className="text-xs font-bold text-slate-800 dark:text-white block">
+                            এয়ার কন্ডিশনড (AC) সেলুন
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                            সেলুনে এসি সুবিধা থাকলে এটি চালু রাখুন
+                          </span>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isAc}
+                          onChange={(e) => setIsAc(e.target.checked)}
+                          className="w-4 h-4 accent-teal-600 rounded cursor-pointer"
+                        />
+                      </label>
+
+                      <label className="flex items-center justify-between p-3 rounded-2xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200/80 dark:border-teal-800/40 cursor-pointer">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center">
+                            <Smartphone className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-teal-900 dark:text-teal-200 block">
+                              {lang === "bn" ? "ডিজিটাল পেমেন্ট গ্রহণ করা হয়" : "Digital Payment Accepted"}
+                            </span>
+                            <span className="text-[10px] text-teal-700 dark:text-teal-300">
+                              {lang === "bn" ? "বিকাশ, নগদ বা কার্ড পেমেন্ট সুবিধা" : "bKash, Nagad or Card payments available"}
+                            </span>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={acceptsDigitalPayment}
+                          onChange={(e) => setAcceptsDigitalPayment(e.target.checked)}
+                          className="w-4 h-4 accent-teal-600 rounded cursor-pointer"
+                        />
+                      </label>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={updatingProfile}
+                      className="w-full py-3 rounded-xl font-bold text-sm bg-teal-700 hover:bg-teal-800 text-white shadow-md transition cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{updatingProfile ? t.loading : t.save}</span>
+                    </button>
+                  </form>
+          )}
+
+                  {/* TAB 3: SUBSCRIPTION */}
+                  {activeTab === "sub" && (
+                    <div className="space-y-4">
+                      {/* Status Card */}
+                      <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-xs">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                              {t.subscriptionStatus}
+                            </span>
+                            <h3 className="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">
+                              {subStatus?.status === "ACTIVE" ? (
+                                <span className="text-emerald-700 flex items-center gap-1">
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>সক্রিয় (Active)</span>
+                                </span>
+                              ) : subStatus?.status === "PENDING" ? (
+                                <span className="text-amber-700 flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  <span>অনুমোদনের অপেক্ষায় (Pending Verification)</span>
+                                </span>
+                              ) : (
+                                <span className="text-rose-700 flex items-center gap-1">
+                                  <AlertCircle className="w-4 h-4" />
+                                  <span>মেয়াদোত্তীর্ণ (Expired / Inactive)</span>
+                                </span>
+                              )}
+                            </h3>
+                          </div>
+
+                          {subStatus?.daysRemaining !== undefined && (
+                            <div className="text-right">
+                              <span className="text-xl font-black text-teal-800 dark:text-teal-300">
+                                {subStatus.daysRemaining}
+                              </span>
+                              <span className="text-[11px] text-slate-500 block">দিন বাকি</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {subStatus?.expiresAt && (
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                            মেয়াদ শেষ: {new Date(subStatus.expiresAt).toLocaleDateString("bn-BD")}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Plan Selector */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPlan("MONTHLY")}
+                          className={`p-4 rounded-2xl border text-left transition cursor-pointer relative ${selectedPlan === "MONTHLY"
+                            ? "bg-teal-50/70 border-teal-600 shadow-xs"
+                            : "bg-white border-slate-200/80 hover:bg-slate-50"
+                            }`}
+                        >
+                          <span className="text-xs font-bold text-slate-700 block">মাসিক প্ল্যান</span>
+                          <p className="text-lg font-black text-teal-900 mt-1">৳৯৯</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">প্রতি মাস (৩০ দিন)</p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPlan("YEARLY")}
+                          className={`p-4 rounded-2xl border text-left transition cursor-pointer relative ${selectedPlan === "YEARLY"
+                            ? "bg-teal-50/70 border-teal-600 shadow-xs"
+                            : "bg-white border-slate-200/80 hover:bg-slate-50"
+                            }`}
+                        >
+                          <div className="absolute top-2 right-2 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                            ১৫% ছাড়
+                          </div>
+                          <span className="text-xs font-bold text-slate-700 block">বার্ষিক প্ল্যান</span>
+                          <p className="text-lg font-black text-teal-900 mt-1">৳১,০১০</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">৩৬৫ দিন সাশ্রয়ী</p>
+                        </button>
+                      </div>
+
+                      {/* Payment Method & Submission */}
+                      <form onSubmit={handleSubmitPayment} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-xs space-y-3.5">
+                        <h3 className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                          {lang === "bn" ? "পেমেন্ট মাধ্যম বেছে নিন" : "Payment Method"}
+                        </h3>
+
+                        {paymentMsg && (
+                          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
+                            {paymentMsg}
+                          </div>
+                        )}
+                        {paymentError && (
+                          <div className="p-3 rounded-xl bg-rose-50 text-rose-800 text-xs border border-rose-200">
+                            {paymentError}
+                          </div>
+                        )}
+
+                        {/* Methods */}
+                        <div className="grid grid-cols-4 gap-1.5 text-center text-xs font-bold">
+                          {(["BKASH", "NAGAD", "ROCKET", "BANK"] as const).map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => {
+                                setPaymentMethod(m);
+                                setPaymentError("");
+                              }}
+                              className={`py-2 px-1 rounded-xl border transition cursor-pointer text-[11px] ${paymentMethod === m
+                                ? "bg-teal-50 dark:bg-teal-950/40 border-teal-600 text-teal-900 dark:text-teal-200 font-extrabold"
+                                : "bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                                }`}
+                            >
+                              {m}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Instructions */}
+                        {paymentMethod === "BANK" ? (
+                          <div className="bg-slate-50 dark:bg-slate-700/40 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
+                            <p className="font-semibold text-slate-900 dark:text-white">ব্যাংক ডিপোজিট / ট্রান্সফার নির্দেশিকা:</p>
+                            <div className="font-mono text-[11px] space-y-0.5 bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
+                              <p><span className="text-slate-400">ব্যাংক:</span> Dutch Bangla Bank / BRAC Bank</p>
+                              <p><span className="text-slate-400">হিসাবের নাম:</span> AmarSalon Technologies Ltd</p>
+                              <p><span className="text-slate-400">হিসাব নম্বর:</span> 151.120.482910</p>
+                              <p><span className="text-slate-400">শাখা / রাউটিং:</span> Dhanmondi Branch (090271829)</p>
+                            </div>
+                            <p className="text-[11px] text-slate-500">
+                              ব্যাংক ট্রান্সফারের পর নিচে ব্যাংকের নাম, অ্যাকাউন্টের নাম ও নম্বর প্রদান করুন।
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-slate-50 dark:bg-slate-700/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                            <p className="font-semibold text-slate-900 dark:text-white">{t.mfsInstructions}</p>
+                            <p className="font-mono font-bold text-teal-800 dark:text-teal-300 text-sm">
+                              01700000000 (মার্চেন্ট / পারসোনাল)
+                            </p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              টাকা পাঠানোর পর প্রাপ্ত Transaction ID (TrxID) নিচে লিখে জমা দিন।
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Conditional Bank Fields */}
+                        {paymentMethod === "BANK" ? (
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {lang === "bn" ? "ব্যাংকের নাম" : "Bank Name"} <span className="text-rose-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={bankName}
+                                onChange={(e) => setBankName(e.target.value)}
+                                placeholder="যেমন: Dutch Bangla Bank / City Bank"
+                                className="w-full text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {lang === "bn" ? "অ্যাকাউন্টের নাম" : "Account Name"} <span className="text-rose-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={accountName}
+                                onChange={(e) => setAccountName(e.target.value)}
+                                placeholder="যেমন: Rahim Uddin / Salon Name"
+                                className="w-full text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {lang === "bn" ? "অ্যাকাউন্ট নম্বর" : "Account Number"} <span className="text-rose-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={accountNumber}
+                                onChange={(e) => setAccountNumber(e.target.value)}
+                                placeholder="যে অ্যাকাউন্ট থেকে টাকা পাঠিয়েছেন"
+                                className="w-full text-sm font-mono bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                Transaction ID / ডিপোজিট স্লিপ রেফারেন্স (ঐচ্ছিক)
+                              </label>
+                              <input
+                                type="text"
+                                value={trxId}
+                                onChange={(e) => setTrxId(e.target.value)}
+                                placeholder="যদি থাকে (যেমন: TXN18293)"
+                                className="w-full text-sm font-mono uppercase bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {t.senderPhone}
+                              </label>
+                              <input
+                                type="tel"
+                                value={senderNumber}
+                                onChange={(e) => setSenderNumber(e.target.value)}
+                                placeholder="যে নম্বর থেকে টাকা পাঠিয়েছেন"
+                                className="w-full text-sm font-mono bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                                {t.trxIdLabel} <span className="text-rose-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={trxId}
+                                onChange={(e) => setTrxId(e.target.value)}
+                                placeholder="যেমন: BKASH9928371X"
+                                className="w-full text-sm font-mono font-bold uppercase bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={submittingPayment}
+                          className="w-full py-3 rounded-xl font-bold text-sm bg-teal-700 hover:bg-teal-800 text-white shadow-md transition cursor-pointer disabled:opacity-50"
+                        >
+                          {submittingPayment ? t.loading : t.submit}
+                        </button>
+                      </form>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {t.senderPhone}
-                    </label>
-                    <input
-                      type="tel"
-                      value={senderNumber}
-                      onChange={(e) => setSenderNumber(e.target.value)}
-                      placeholder="যে নম্বর থেকে টাকা পাঠিয়েছেন"
-                      className="w-full text-sm font-mono bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                    />
-                  </div>
+              </AppShell>
+              );
+  }
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {t.trxIdLabel} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={trxId}
-                      onChange={(e) => setTrxId(e.target.value)}
-                      placeholder="যেমন: BKASH9928371X"
-                      className="w-full text-sm font-mono font-bold uppercase bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                    />
-                  </div>
-                </>
-              )}
-
-              <button
-                type="submit"
-                disabled={submittingPayment}
-                className="w-full py-3 rounded-xl font-bold text-sm bg-teal-700 hover:bg-teal-800 text-white shadow-md transition cursor-pointer disabled:opacity-50"
-              >
-                {submittingPayment ? t.loading : t.submit}
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
-    </AppShell>
-  );
-}
-
-export default function OwnerProfilePage() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">লোড হচ্ছে...</div>}>
-      <OwnerProfileContent />
-    </Suspense>
-  );
-}
+              export default function OwnerProfilePage() {
+    return (
+              <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">লোড হচ্ছে...</div>}>
+                <OwnerProfileContent />
+              </Suspense>
+              );
+  }

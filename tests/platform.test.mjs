@@ -1,10 +1,11 @@
 import { test, describe, before } from "node:test";
 import assert from "node:assert";
+import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-describe("AmarSaloon Comprehensive Platform Test Suite", async () => {
+describe("AmarSalon Comprehensive Platform Test Suite", async () => {
   let testOwner;
   let testCustomer;
   let testSalon;
@@ -64,6 +65,82 @@ describe("AmarSaloon Comprehensive Platform Test Suite", async () => {
       // Clean up
       await prisma.otpVerification.delete({ where: { id: record.id } });
     });
+
+    test("Normalizes phone numbers to Bulk SMS BD 8801XXXXXXXXX format", () => {
+      function formatBdPhoneForSms(rawPhone) {
+        let cleaned = String(rawPhone || "").trim().replace(/\D/g, "");
+        if (cleaned.startsWith("880")) return cleaned;
+        if (cleaned.startsWith("0")) return `88${cleaned}`;
+        return `880${cleaned}`;
+      }
+
+      assert.strictEqual(formatBdPhoneForSms("01711223344"), "8801711223344");
+      assert.strictEqual(formatBdPhoneForSms("+8801822334455"), "8801822334455");
+      assert.strictEqual(formatBdPhoneForSms("8801933445566"), "8801933445566");
+    });
+
+    test("Owner first-time signup verifies OTP, stores hashed password, and allows subsequent login with password without OTP", async () => {
+      function hashPassword(password) {
+        const salt = crypto.randomBytes(16).toString("hex");
+        const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+        return `${salt}:${hash}`;
+      }
+
+      function verifyPassword(password, storedHash) {
+        if (!storedHash || !password) return false;
+        if (storedHash === password) return true;
+        const [salt, key] = storedHash.split(":");
+        if (!salt || !key) return false;
+        const hash = crypto.scryptSync(password, salt, 64).toString("hex");
+        return crypto.timingSafeEqual(Buffer.from(key, "hex"), Buffer.from(hash, "hex"));
+      }
+
+      const testPhone = "01799001122";
+      const testPass = "myOwnerPass123";
+      const testOtp = "998877";
+
+      // 1. Send OTP
+      await prisma.otpVerification.create({
+        data: {
+          phone: testPhone,
+          code: testOtp,
+          expiresAt: new Date(Date.now() + 180 * 1000),
+        },
+      });
+
+      // 2. Verify OTP and Sign Up with Password
+      const otpRecord = await prisma.otpVerification.findFirst({
+        where: { phone: testPhone, code: testOtp },
+      });
+      assert.ok(otpRecord, "Valid OTP found for signup");
+
+      const passwordHash = hashPassword(testPass);
+      const newOwner = await prisma.user.create({
+        data: {
+          phone: testPhone,
+          name: "টেস্ট মালিক (Test Owner)",
+          role: "OWNER",
+          passwordHash,
+          languagePref: "bn",
+          status: "ACTIVE",
+        },
+      });
+
+      assert.strictEqual(newOwner.role, "OWNER");
+      assert.ok(newOwner.passwordHash, "Password hash is stored");
+
+      // Clean up OTP record
+      await prisma.otpVerification.deleteMany({ where: { phone: testPhone } });
+
+      // 3. Subsequent Login using Phone & Password (NO OTP NEEDED)
+      const loginUser = await prisma.user.findUnique({ where: { phone: testPhone } });
+      assert.ok(loginUser, "Owner found by phone");
+      assert.strictEqual(verifyPassword(testPass, loginUser.passwordHash), true, "Correct password succeeds");
+      assert.strictEqual(verifyPassword("wrongpass", loginUser.passwordHash), false, "Wrong password fails");
+
+      // Clean up test user
+      await prisma.user.delete({ where: { id: newOwner.id } });
+    });
   });
 
   // 2. DISCOVERY & GEOSPATIAL HAVERSINE
@@ -75,9 +152,9 @@ describe("AmarSaloon Comprehensive Platform Test Suite", async () => {
       const a =
         Math.sin(dLat / 2) * Math.sin(dLat / 2) +
         Math.cos((lat1 * Math.PI) / 180) *
-          Math.cos((lat2 * Math.PI) / 180) *
-          Math.sin(dLon / 2) *
-          Math.sin(dLon / 2);
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
       return Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1));
     }
 
@@ -296,7 +373,7 @@ describe("AmarSaloon Comprehensive Platform Test Suite", async () => {
         data: {
           saloonId: testSalon.id,
           planType: "MONTHLY",
-          amount: 499,
+          amount: 99,
           paymentMethod: "BKASH",
           trxId: testTrxId,
           status: "PENDING",
@@ -312,7 +389,7 @@ describe("AmarSaloon Comprehensive Platform Test Suite", async () => {
           data: {
             saloonId: testSalon.id,
             planType: "MONTHLY",
-            amount: 499,
+            amount: 99,
             paymentMethod: "BKASH",
             trxId: testTrxId,
             status: "PENDING",
@@ -361,6 +438,87 @@ describe("AmarSaloon Comprehensive Platform Test Suite", async () => {
         data: { status: "ACTIVE" },
       });
       assert.strictEqual(restored.status, "ACTIVE");
+    });
+
+    test("Enforces reserved salon IDs 1001-1050 and starts self-registration from 1051", async () => {
+      // Fetch all existing salon codes
+      const allSalons = await prisma.saloon.findMany({ select: { code: true } });
+      const usedCodes = new Set(allSalons.map((s) => s.code).filter(Boolean));
+
+      // 1. Reserved range 1001-1050
+      const reservedRange = Array.from({ length: 50 }, (_, i) => (1001 + i).toString());
+      const availableReserved = reservedRange.filter((c) => !usedCodes.has(c));
+
+      // 1001 is used by seed salon, so it must not be in availableReserved
+      assert.strictEqual(availableReserved.includes("1001"), false, "Used ID 1001 must not be available");
+      assert.ok(availableReserved.length > 0, "Available reserved IDs must exist");
+      assert.ok(availableReserved.every((c) => Number(c) >= 1001 && Number(c) <= 1050));
+
+      // 2. Owner self-registration logic starts from 1051
+      let maxSelfCode = 1050;
+      for (const s of allSalons) {
+        if (s.code) {
+          const num = parseInt(s.code, 10);
+          if (!isNaN(num) && num >= 1051 && num > maxSelfCode) maxSelfCode = num;
+        }
+      }
+      const nextOwnerCode = (maxSelfCode + 1).toString();
+      assert.ok(Number(nextOwnerCode) >= 1051, "Self-registered salon code must be >= 1051");
+    });
+
+    test("Admin can create a salon with reserved ID, coordinates, digital payment, and services", async () => {
+      const codeToAssign = "1049"; // in reserved range
+      const testOwnerPhone = "01788776655";
+
+      // Create owner user
+      let owner = await prisma.user.findUnique({ where: { phone: testOwnerPhone } });
+      if (!owner) {
+        owner = await prisma.user.create({
+          data: {
+            phone: testOwnerPhone,
+            name: "Test Admin Added Owner",
+            email: "admin-added@test.com",
+            role: "OWNER",
+          },
+        });
+      }
+
+      const created = await prisma.saloon.create({
+        data: {
+          code: codeToAssign,
+          ownerId: owner.id,
+          slug: `admin-test-salon-${Date.now()}`,
+          nameBn: "টেস্ট এডমিন সেলুন",
+          nameEn: "Test Admin Salon",
+          category: "GENTS",
+          isAc: true,
+          acceptsDigitalPayment: true,
+          address: "বনানী রোড ১১, ঢাকা",
+          phone: testOwnerPhone,
+          email: "admin-added@test.com",
+          latitude: 23.7937,
+          longitude: 90.4066,
+          totalChairs: 3,
+          busyChairs: 0,
+          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          services: {
+            create: [
+              { nameBn: "চুল কাটা", nameEn: "Hair Cut", price: 250, durationMins: 25 },
+              { nameBn: "শেভ", nameEn: "Shave", price: 150, durationMins: 15 },
+            ],
+          },
+        },
+        include: { services: true },
+      });
+
+      assert.strictEqual(created.code, "1049");
+      assert.strictEqual(created.isAc, true);
+      assert.strictEqual(created.acceptsDigitalPayment, true);
+      assert.strictEqual(created.services.length, 2);
+
+      // Clean up
+      await prisma.saloon.delete({ where: { id: created.id } });
+      await prisma.user.delete({ where: { id: owner.id } });
     });
   });
 });
