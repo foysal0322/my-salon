@@ -247,7 +247,7 @@ export async function GET(
           `;
         }).join("");
 
-    const html = `<!DOCTYPE html>
+      const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -257,7 +257,11 @@ export async function GET(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       color: #0f172a;
@@ -286,11 +290,21 @@ export async function GET(
       border: 1px solid transparent;
       transition: background 0.15s ease;
     }
-    .btn-primary { background: #0f172a; color: #ffffff; }
-    .btn-primary:hover { background: #1e293b; }
-    .btn-outline { background: #ffffff; color: #475569; border: 1px solid #cbd5e1; }
-    .btn-outline:hover { background: #f1f5f9; }
-
+    .btn-primary {
+      background: #0f172a;
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: #1e293b;
+    }
+    .btn-outline {
+      background: #ffffff;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-outline:hover {
+      background: #f1f5f9;
+    }
     .statement-container {
       max-width: 820px;
       margin: 0 auto;
@@ -300,8 +314,6 @@ export async function GET(
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       border: 1px solid #e2e8f0;
     }
-
-    /* MINIMAL HEADER */
     .header {
       display: flex;
       justify-content: space-between;
@@ -333,8 +345,6 @@ export async function GET(
       font-weight: 700;
       color: #0f172a;
     }
-
-    /* 3-METRIC SUMMARY BAR */
     .summary-strip {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -360,8 +370,6 @@ export async function GET(
       font-weight: 700;
       font-variant-numeric: tabular-nums;
     }
-
-    /* TABLE */
     table.statement-table {
       width: 100%;
       border-collapse: collapse;
@@ -400,7 +408,9 @@ export async function GET(
       color: #64748b;
       margin-top: 1px;
     }
-    .col-right { text-align: right; }
+    .col-right {
+      text-align: right;
+    }
     .col-amount {
       text-align: right;
       font-weight: 600;
@@ -409,12 +419,24 @@ export async function GET(
     .font-mono {
       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     }
-    .font-bold { font-weight: 700; }
-    .text-success { color: #16a34a; }
-    .text-danger { color: #dc2626; }
-    .text-dark { color: #0f172a; }
-    .text-muted { color: #64748b; }
-    .dash { color: #cbd5e1; }
+    .font-bold {
+      font-weight: 700;
+    }
+    .text-success {
+      color: #16a34a;
+    }
+    .text-danger {
+      color: #dc2626;
+    }
+    .text-dark {
+      color: #0f172a;
+    }
+    .text-muted {
+      color: #64748b;
+    }
+    .dash {
+      color: #cbd5e1;
+    }
     .empty-state {
       text-align: center;
       padding: 32px;
@@ -428,8 +450,6 @@ export async function GET(
       padding: 10px;
       background: #f8fafc;
     }
-
-    /* FOOTER */
     .statement-footer {
       border-top: 1px solid #e2e8f0;
       padding-top: 12px;
@@ -439,7 +459,6 @@ export async function GET(
       font-size: 11px;
       color: #94a3b8;
     }
-
     @media print {
       body {
         background: #ffffff !important;
@@ -529,8 +548,8 @@ export async function GET(
   </div>
 
   <script>
-    window.onload = function() {
-      setTimeout(function() {
+    window.onload = function () {
+      setTimeout(function () {
         window.print();
       }, 500);
     };
