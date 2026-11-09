@@ -553,35 +553,35 @@ export async function GET(
         window.print();
       }, 500);
     };
-  </script>
-</body>
-</html>`;
+      </script>
+        </body>
+        </html>`;
 
-    return new Response(html, {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-      },
-    });
-  }
+      return new Response(html, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+        },
+      });
+    }
 
     return NextResponse.json({
-    summary: {
-      thisMonthIncome,
-      thisMonthExpense,
-      totalIncome: thisMonthIncome,
-      totalExpense: thisMonthExpense,
-      netProfit: thisMonthProfit,
-      totalEntries: entries.length,
-    },
-    entries,
-  });
-} catch (error: any) {
-  console.error("Ledger fetch error:", error);
-  return NextResponse.json(
-    { error: "হিসাব খাতার তথ্য লোড করতে সমস্যা হয়েছে।" },
-    { status: 500 }
-  );
-}
+      summary: {
+        thisMonthIncome,
+        thisMonthExpense,
+        totalIncome: thisMonthIncome,
+        totalExpense: thisMonthExpense,
+        netProfit: thisMonthProfit,
+        totalEntries: entries.length,
+      },
+      entries,
+    });
+  } catch (error: any) {
+    console.error("Ledger fetch error:", error);
+    return NextResponse.json(
+      { error: "হিসাব খাতার তথ্য লোড করতে সমস্যা হয়েছে।" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(
