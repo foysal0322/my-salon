@@ -80,6 +80,9 @@ function OwnerProfileContent() {
   const [bankName, setBankName] = useState("");
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
+  const [bankReceiptUrl, setBankReceiptUrl] = useState("");
+  const [uploadingBankReceipt, setUploadingBankReceipt] = useState(false);
+  const bankReceiptInputRef = useRef<HTMLInputElement>(null);
   const [submittingPayment, setSubmittingPayment] = useState(false);
   const [paymentMsg, setPaymentMsg] = useState("");
   const [paymentError, setPaymentError] = useState("");
@@ -317,6 +320,57 @@ function OwnerProfileContent() {
     }
   };
 
+  // Upload Bank Receipt / Invoice Screenshot
+  const handleBankReceiptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingBankReceipt(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const img = new Image();
+        img.onload = async () => {
+          const canvas = document.createElement("canvas");
+          const maxW = 1280;
+          const maxH = 1280;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxW || h > maxH) {
+            const ratio = Math.min(maxW / w, maxH / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, w, h);
+          }
+          const dataUrl = canvas.toDataURL("image/webp", 0.85);
+
+          const res = await fetch("/api/v1/upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dataUrl, image: dataUrl, folder: "receipts" }),
+          });
+          const data = await res.json();
+          if (data.url) {
+            setBankReceiptUrl(data.url);
+          }
+          setUploadingBankReceipt(false);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Bank receipt upload failed", err);
+      setUploadingBankReceipt(false);
+    }
+  };
+
   // Submit Subscription Payment
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -355,6 +409,7 @@ function OwnerProfileContent() {
           paymentMethod,
           senderNumber: paymentMethod === "BANK" ? accountNumber.trim() : senderNumber.trim(),
           trxId: trxId.trim() || null,
+          receiptUrl: bankReceiptUrl || null,
           bankName: bankName.trim(),
           accountName: accountName.trim(),
           accountNumber: accountNumber.trim(),
@@ -368,6 +423,7 @@ function OwnerProfileContent() {
         setBankName("");
         setAccountName("");
         setAccountNumber("");
+        setBankReceiptUrl("");
         fetchSalonAndQr();
       } else {
         setPaymentError(data.error || "Payment submission failed");
@@ -1274,21 +1330,8 @@ function OwnerProfileContent() {
                           ))}
                         </div>
 
-                        {/* Instructions */}
-                        {paymentMethod === "BANK" ? (
-                          <div className="bg-slate-50 dark:bg-slate-700/40 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 space-y-1.5">
-                            <p className="font-semibold text-slate-900 dark:text-white">ব্যাংক ডিপোজিট / ট্রান্সফার নির্দেশিকা:</p>
-                            <div className="font-mono text-[11px] space-y-0.5 bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200">
-                              <p><span className="text-slate-400">ব্যাংক:</span> Dutch Bangla Bank / BRAC Bank</p>
-                              <p><span className="text-slate-400">হিসাবের নাম:</span> AmarSalon Technologies Ltd</p>
-                              <p><span className="text-slate-400">হিসাব নম্বর:</span> 151.120.482910</p>
-                              <p><span className="text-slate-400">শাখা / রাউটিং:</span> Dhanmondi Branch (090271829)</p>
-                            </div>
-                            <p className="text-[11px] text-slate-500">
-                              ব্যাংক ট্রান্সফারের পর নিচে ব্যাংকের নাম, অ্যাকাউন্টের নাম ও নম্বর প্রদান করুন।
-                            </p>
-                          </div>
-                        ) : (
+                        {/* Instructions: Only shown for MFS */}
+                        {paymentMethod !== "BANK" && (
                           <div className="bg-slate-50 dark:bg-slate-700/40 p-3 rounded-2xl border border-slate-200 dark:border-slate-600 text-xs text-slate-600 dark:text-slate-300 space-y-1">
                             <p className="font-semibold text-slate-900 dark:text-white">{t.mfsInstructions}</p>
                             <p className="font-mono font-bold text-teal-800 dark:text-teal-300 text-sm">
@@ -1356,6 +1399,90 @@ function OwnerProfileContent() {
                                 placeholder="যদি থাকে (যেমন: TXN18293)"
                                 className="w-full text-sm font-mono uppercase bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
                               />
+                            </div>
+
+                            {/* Bank Invoice / Deposit Slip Screenshot Upload */}
+                            <div className="space-y-1.5 pt-1">
+                              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                {lang === "bn"
+                                  ? "ব্যাংক ইনভয়েস বা জমার স্ক্রিনশট / রসিদ"
+                                  : "Bank Invoice or Deposit Slip Screenshot"}
+                              </label>
+
+                              <input
+                                ref={bankReceiptInputRef}
+                                type="file"
+                                accept="image/*"
+                                onChange={handleBankReceiptChange}
+                                className="hidden"
+                              />
+
+                              {bankReceiptUrl ? (
+                                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 group bg-slate-50 dark:bg-slate-800/80 p-2.5 flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <img
+                                      src={bankReceiptUrl}
+                                      alt="Bank Invoice Preview"
+                                      className="w-14 h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700 shrink-0"
+                                    />
+                                    <div className="min-w-0">
+                                      <p className="text-xs font-bold text-slate-800 dark:text-white truncate">
+                                        {lang === "bn" ? "ইনভয়েস যুক্ত হয়েছে" : "Invoice Attached"}
+                                      </p>
+                                      <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                                        <CheckCircle2 className="w-3 h-3" />
+                                        <span>{lang === "bn" ? "আপলোড সফল" : "Uploaded"}</span>
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => bankReceiptInputRef.current?.click()}
+                                      className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+                                      title={lang === "bn" ? "পরিবর্তন" : "Change"}
+                                    >
+                                      <RefreshCw className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setBankReceiptUrl("")}
+                                      className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 text-xs font-bold transition cursor-pointer"
+                                      title={lang === "bn" ? "মুছুন" : "Remove"}
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div
+                                  onClick={() => bankReceiptInputRef.current?.click()}
+                                  className="w-full border-2 border-dashed border-teal-300 dark:border-teal-700/60 rounded-2xl bg-teal-50/40 dark:bg-teal-950/20 hover:bg-teal-50 dark:hover:bg-teal-950/40 transition flex items-center justify-center gap-3 cursor-pointer p-4 text-center"
+                                >
+                                  <div className="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0">
+                                    <Camera className="w-4 h-4" />
+                                  </div>
+                                  <div className="text-left">
+                                    <p className="text-xs font-bold text-teal-900 dark:text-teal-200">
+                                      {lang === "bn"
+                                        ? "ইনভয়েস বা রসিদের ছবি আপলোড করুন"
+                                        : "Upload Bank Invoice / Receipt"}
+                                    </p>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                      {lang === "bn"
+                                        ? "ক্যামেরা দিয়ে ছবি তুলুন বা গ্যালারি থেকে বেছে নিন"
+                                        : "Take a photo or choose screenshot from gallery"}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {uploadingBankReceipt && (
+                                <p className="text-xs text-teal-600 dark:text-teal-400 animate-pulse font-medium">
+                                  {lang === "bn" ? "ইনভয়েস আপলোড হচ্ছে..." : "Uploading invoice..."}
+                                </p>
+                              )}
                             </div>
                           </div>
                         ) : (

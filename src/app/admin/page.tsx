@@ -25,6 +25,7 @@ import {
   Mail,
   Phone,
   Check,
+  ExternalLink,
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -612,6 +613,17 @@ export default function AdminPage() {
                           {sub.adminNote && (
                             <p className="text-[11px] text-teal-300 mt-1 font-mono bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">{sub.adminNote}</p>
                           )}
+                          {sub.receiptUrl && (
+                            <a
+                              href={sub.receiptUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-[11px] text-teal-400 hover:text-teal-300 font-semibold underline mt-1"
+                            >
+                              <span>ইনভয়েস / স্ক্রিনশট দেখুন</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
                         </div>
                       </div>
 
@@ -688,6 +700,17 @@ export default function AdminPage() {
                           <p className="text-[10px] text-slate-400">{sub.senderNumber}</p>
                           {sub.adminNote && (
                             <p className="text-[10px] text-teal-300 max-w-[200px] truncate" title={sub.adminNote}>{sub.adminNote}</p>
+                          )}
+                          {sub.receiptUrl && (
+                            <a
+                              href={sub.receiptUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] text-teal-400 hover:text-teal-300 font-semibold underline mt-0.5"
+                            >
+                              <span>ইনভয়েস দেখুন</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
                           )}
                         </td>
                         <td className="p-3 font-mono font-bold text-white">৳{sub.amount}</td>
