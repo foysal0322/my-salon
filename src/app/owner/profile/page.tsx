@@ -1035,113 +1035,113 @@ function OwnerProfileContent() {
               />
             </div>
 
-              {/* GPS Location Field & Button */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <span>{lang === "bn" ? "GPS লোকেশন (অক্ষাংশ ও দ্রাঘিমাংশ)" : "GPS Location (Lat, Lng)"}</span>
-                  </label>
-                  {latitude && longitude && (
-                    <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                      ✓ {lang === "bn" ? "সংরক্ষিত" : "Saved"}
-                    </span>
-                  )}
-                </div>
+                {/* GPS Location Field & Button */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                      <span>{lang === "bn" ? "GPS লোকেশন (অক্ষাংশ ও দ্রাঘিমাংশ)" : "GPS Location (Lat, Lng)"}</span>
+                    </label>
+                      {latitude && longitude && (
+                        <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                          ✓ {lang === "bn" ? "সংরক্ষিত" : "Saved"}
+                        </span>
+                      )}
+                    </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      readOnly
-                      value={
-                        latitude && longitude
-                          ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
-                          : ""
-                      }
-                      placeholder={lang === "bn" ? "যেমন: 23.746500, 90.376800" : "e.g. 23.746500, 90.376800"}
-                      className="w-full text-xs font-mono font-bold bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
-                    />
-                  </div>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            readOnly
+                            value={
+                              latitude && longitude
+                                ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+                                : ""
+                            }
+                            placeholder={lang === "bn" ? "যেমন: 23.746500, 90.376800" : "e.g. 23.746500, 90.376800"}
+                            className="w-full text-xs font-mono font-bold bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                          />
+                        </div>
 
-                  <button
-                    type="button"
-                    onClick={handleGetCurrentLocation}
-                    disabled={locatingGps}
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-60"
-                    title={lang === "bn" ? "বর্তমান GPS লোকেশন নিন" : "Get Current Location"}
-                  >
-                    <Navigation className={`w-3.5 h-3.5 ${locatingGps ? "animate-spin" : ""}`} />
-                    <span>
-                      {locatingGps
-                        ? (lang === "bn" ? "লোকেশন খোঁজা হচ্ছে..." : "Locating...")
-                        : (lang === "bn" ? "GPS লোকেশন নিন" : "Get GPS")}
-                    </span>
-                  </button>
-                </div>
+                        <button
+                          type="button"
+                          onClick={handleGetCurrentLocation}
+                          disabled={locatingGps}
+                          className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-60"
+                          title={lang === "bn" ? "বর্তমান GPS লোকেশন নিন" : "Get Current Location"}
+                        >
+                          <Navigation className={`w-3.5 h-3.5 ${locatingGps ? "animate-spin" : ""}`} />
+                          <span>
+                            {locatingGps
+                              ? (lang === "bn" ? "লোকেশন খোঁজা হচ্ছে..." : "Locating...")
+                              : (lang === "bn" ? "GPS লোকেশন নিন" : "Get GPS")}
+                          </span>
+                        </button>
+                      </div>
 
-                {gpsSuccessMsg && (
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
-                    {gpsSuccessMsg}
-                  </p>
-                )}
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                  {lang === "bn"
-                    ? "সেলুনে অবস্থানকালীন এই বাটনে চাপ দিন যাতে কাস্টমাররা ম্যাপে সেলুনের সঠিক দূরত্ব দেখতে পায়।"
-                    : "Tap while at your salon so customers see accurate distance on search and maps."}
-                </p>
-              </div>
+                      {gpsSuccessMsg && (
+                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                          {gpsSuccessMsg}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                        {lang === "bn"
+                          ? "সেলুনে অবস্থানকালীন এই বাটনে চাপ দিন যাতে কাস্টমাররা ম্যাপে সেলুনের সঠিক দূরত্ব দেখতে পায়।"
+                          : "Tap while at your salon so customers see accurate distance on search and maps."}
+                      </p>
+                    </div>
 
-              {/* Category (Mobile-Friendly Touch Pills + Styled Dropdown) */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  {t.categoryLabel || (lang === "bn" ? "সেলুনের ধরন / ক্যাটাগরি" : "Salon Category")}
-                </label>
+                    {/* Category (Mobile-Friendly Touch Pills + Styled Dropdown) */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        {t.categoryLabel || (lang === "bn" ? "সেলুনের ধরন / ক্যাটাগরি" : "Salon Category")}
+                      </label>
 
-                {/* Mobile-Friendly Touch Pills */}
-                <div className="grid grid-cols-3 gap-2 mb-2">
-                  {[
-                    { id: "GENTS", labelBn: "জেন্টস", labelEn: "Gents", icon: "👨" },
-                    { id: "LADIES", labelBn: "লেডিস", labelEn: "Ladies", icon: "👩" },
-                    { id: "UNISEX", labelBn: "ইউনিসেক্স", labelEn: "Unisex", icon: "👥" },
-                  ].map((cat) => {
-                    const isSelected = category === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => {
-                          triggerHaptic(15);
-                          setCategory(cat.id);
-                        }}
-                        className={`py-2 px-1.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${isSelected
-                          ? "bg-teal-50 dark:bg-teal-950/60 border-teal-600 text-teal-800 dark:text-teal-200 shadow-xs ring-1 ring-teal-500/20"
-                          : "bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600/60"
-                        }`}
-                      >
-                        <span className="text-sm leading-none">{cat.icon}</span>
-                        <span className="text-[11px]">{lang === "bn" ? cat.labelBn : cat.labelEn}</span>
-                      </button>
-                    );
+                      {/* Mobile-Friendly Touch Pills */}
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {[
+                          { id: "GENTS", labelBn: "জেন্টস", labelEn: "Gents", icon: "👨" },
+                          { id: "LADIES", labelBn: "লেডিস", labelEn: "Ladies", icon: "👩" },
+                          { id: "UNISEX", labelBn: "ইউনিসেক্স", labelEn: "Unisex", icon: "👥" },
+                        ].map((cat) => {
+                          const isSelected = category === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => {
+                                triggerHaptic(15);
+                                setCategory(cat.id);
+                              }}
+                              className={`py-2 px-1.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${isSelected
+                                ? "bg-teal-50 dark:bg-teal-950/60 border-teal-600 text-teal-800 dark:text-teal-200 shadow-xs ring-1 ring-teal-500/20"
+                                : "bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600/60"
+                                }`}
+                            >
+                              <span className="text-sm leading-none">{cat.icon}</span>
+                              <span className="text-[11px]">{lang === "bn" ? cat.labelBn : cat.labelEn}</span>
+                            </button>
+                      );
                   })}
-                </div>
+                    </div>
 
-                {/* Enhanced Mobile-friendly Select Dropdown */}
-                <div className="relative">
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full text-xs font-semibold bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 appearance-none cursor-pointer dark:text-white pr-9 shadow-2xs"
-                  >
-                    <option value="GENTS">👨 {t.gents}</option>
-                    <option value="LADIES">👩 {t.ladies}</option>
-                    <option value="UNISEX">👥 {t.unisex}</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400">
-                    <ChevronDown className="w-4 h-4" />
+                    {/* Enhanced Mobile-friendly Select Dropdown */}
+                    <div className="relative">
+                      <select
+                        value={category}
+                        onChange={(e) => setCategory(e.target.value)}
+                        className="w-full text-xs font-semibold bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 appearance-none cursor-pointer dark:text-white pr-9 shadow-2xs"
+                      >
+                        <option value="GENTS">👨 {t.gents}</option>
+                        <option value="LADIES">👩 {t.ladies}</option>
+                        <option value="UNISEX">👥 {t.unisex}</option>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
                     {/* Total Chairs */}
                     <div>
