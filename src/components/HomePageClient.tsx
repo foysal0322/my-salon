@@ -14,6 +14,11 @@ import {
   Clock,
   ChevronRight,
   Navigation,
+  Check,
+  CreditCard,
+  Zap,
+  SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 
 export default function HomePageClient({
@@ -25,9 +30,14 @@ export default function HomePageClient({
 
   const [saloons, setSaloons] = useState<SalonItem[]>(initialSaloons);
   const [loading, setLoading] = useState(initialSaloons.length === 0);
-  const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
-  const [acFilter, setAcFilter] = useState<string>("ALL");
-  const [freeChairsFilter, setFreeChairsFilter] = useState(false);
+
+  // Multi-select filters
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isAcFilter, setIsAcFilter] = useState<boolean>(false);
+  const [freeChairsFilter, setFreeChairsFilter] = useState<boolean>(false);
+  const [digitalPayFilter, setDigitalPayFilter] = useState<boolean>(false);
+  const [zeroQueueFilter, setZeroQueueFilter] = useState<boolean>(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -56,15 +66,42 @@ export default function HomePageClient({
     );
   };
 
+  const toggleCategory = (cat: "GENTS" | "LADIES" | "UNISEX") => {
+    triggerHaptic(20);
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const clearAllFilters = () => {
+    triggerHaptic(30);
+    setSelectedCategories([]);
+    setIsAcFilter(false);
+    setFreeChairsFilter(false);
+    setDigitalPayFilter(false);
+    setZeroQueueFilter(false);
+    setSearchQuery("");
+  };
+
+  const activeFilterCount =
+    selectedCategories.length +
+    (isAcFilter ? 1 : 0) +
+    (freeChairsFilter ? 1 : 0) +
+    (digitalPayFilter ? 1 : 0) +
+    (zeroQueueFilter ? 1 : 0);
+
   const fetchSaloons = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (categoryFilter !== "ALL") params.append("category", categoryFilter);
-      if (acFilter === "AC") params.append("isAc", "true");
-      if (acFilter === "NON_AC") params.append("isAc", "false");
+      if (selectedCategories.length > 0) {
+        params.append("category", selectedCategories.join(","));
+      }
+      if (isAcFilter) params.append("isAc", "true");
       if (freeChairsFilter) params.append("freeChairs", "true");
-      if (searchQuery) params.append("search", searchQuery);
+      if (digitalPayFilter) params.append("digitalPayment", "true");
+      if (zeroQueueFilter) params.append("zeroQueue", "true");
+      if (searchQuery.trim()) params.append("search", searchQuery.trim());
       if (userLocation) {
         params.append("lat", userLocation.lat.toString());
         params.append("lng", userLocation.lng.toString());
@@ -91,8 +128,21 @@ export default function HomePageClient({
       }
       return;
     }
-    fetchSaloons();
-  }, [categoryFilter, acFilter, freeChairsFilter, userLocation]);
+
+    const timer = setTimeout(() => {
+      fetchSaloons();
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [
+    selectedCategories,
+    isAcFilter,
+    freeChairsFilter,
+    digitalPayFilter,
+    zeroQueueFilter,
+    searchQuery,
+    userLocation,
+  ]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,13 +152,13 @@ export default function HomePageClient({
   return (
     <AppShell>
       {/* Search Header Banner */}
-      <section className="bg-gradient-to-b from-white to-slate-50 px-4 pt-3 pb-4 border-b border-slate-200/70">
-        <div className="flex items-center justify-between mb-2.5">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-800">
+      <section className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-900 dark:to-slate-900/90 px-4 pt-3 pb-4 border-b border-slate-200/70 dark:border-slate-800 transition-colors">
+        <div className="flex items-center justify-between mb-2.5 gap-2">
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">
               {lang === "bn" ? "কাছের সেলুন খুঁজুন" : "Find Salons Near You"}
             </h2>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate whitespace-nowrap">
               {lang === "bn" ? "চেয়ারের অবস্থা দেখে লাইভ সিরিয়াল নিন" : "Real-time chairs & online tokens"}
             </p>
           </div>
@@ -116,9 +166,9 @@ export default function HomePageClient({
           <button
             onClick={handleGetLocation}
             disabled={locating}
-            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200/80 transition cursor-pointer shadow-xs active:scale-95"
+            className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-full bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 text-teal-800 dark:text-teal-200 border border-teal-200/80 dark:border-teal-800 transition cursor-pointer shadow-xs active:scale-95 shrink-0 whitespace-nowrap"
           >
-            <Navigation className={`w-3.5 h-3.5 text-teal-600 ${locating ? "animate-spin" : ""}`} />
+            <Navigation className={`w-3.5 h-3.5 text-teal-600 dark:text-teal-400 ${locating ? "animate-spin" : ""}`} />
             <span>{locating ? (lang === "bn" ? "খোঁজা হচ্ছে..." : "Locating...") : t.nearMe}</span>
           </button>
         </div>
@@ -130,9 +180,9 @@ export default function HomePageClient({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full bg-white text-slate-900 placeholder:text-slate-400 text-sm pl-10 pr-10 py-2.5 rounded-2xl border border-slate-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+            className="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm pl-10 pr-10 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
           />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 pointer-events-none" />
           {searchQuery && (
             <button
               type="button"
@@ -140,82 +190,185 @@ export default function HomePageClient({
                 setSearchQuery("");
                 setTimeout(fetchSaloons, 50);
               }}
-              className="absolute right-3 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="absolute right-3 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
             >
               ✕
             </button>
           )}
         </form>
 
-        {/* Quick Horizontal Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pt-3 pb-1 no-scrollbar text-xs">
-          {/* Categories */}
-          <button
-            onClick={() => setCategoryFilter("ALL")}
-            className={`px-3 py-1.5 rounded-full font-semibold shrink-0 transition cursor-pointer ${
-              categoryFilter === "ALL"
-                ? "bg-[#0D9488] text-white shadow-xs"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
-            }`}
-          >
-            {lang === "bn" ? "সকল" : "All"}
-          </button>
-          <button
-            onClick={() => setCategoryFilter("GENTS")}
-            className={`px-3 py-1.5 rounded-full font-semibold shrink-0 transition cursor-pointer ${
-              categoryFilter === "GENTS"
-                ? "bg-[#0D9488] text-white shadow-xs"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
-            }`}
-          >
-            {t.gents}
-          </button>
-          <button
-            onClick={() => setCategoryFilter("LADIES")}
-            className={`px-3 py-1.5 rounded-full font-semibold shrink-0 transition cursor-pointer ${
-              categoryFilter === "LADIES"
-                ? "bg-[#0D9488] text-white shadow-xs"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
-            }`}
-          >
-            {t.ladies}
-          </button>
-          <button
-            onClick={() => setCategoryFilter("UNISEX")}
-            className={`px-3 py-1.5 rounded-full font-semibold shrink-0 transition cursor-pointer ${
-              categoryFilter === "UNISEX"
-                ? "bg-[#0D9488] text-white shadow-xs"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
-            }`}
-          >
-            {t.unisex}
-          </button>
+        {/* Quick Multi-Select Filter Section */}
+        <div className="pt-2.5 space-y-2">
+          {/* Active Filter Summary Bar (if any filter or search query is applied) */}
+          {(activeFilterCount > 0 || searchQuery.trim().length > 0) && (
+            <div className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-teal-50/80 dark:bg-teal-950/40 border border-teal-200/70 dark:border-teal-800/60 text-xs animate-in fade-in">
+              <div className="flex items-center gap-1.5 text-teal-950 dark:text-teal-200 font-semibold text-[11px] truncate">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                <span className="truncate">
+                  {lang === "bn"
+                    ? `${activeFilterCount}টি ফিল্টার সক্রিয় • ${saloons.length}টি সেলুন পাওয়া গেছে`
+                    : `${activeFilterCount} filter${activeFilterCount > 1 ? "s" : ""} active • ${saloons.length} salon${saloons.length !== 1 ? "s" : ""}`}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-900/60 px-2 py-0.5 rounded-lg shadow-2xs transition cursor-pointer shrink-0 active:scale-95"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>{lang === "bn" ? "রিসেট করুন" : "Reset all"}</span>
+              </button>
+            </div>
+          )}
 
-          {/* AC Toggle */}
-          <button
-            onClick={() => setAcFilter(acFilter === "AC" ? "ALL" : "AC")}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-semibold shrink-0 transition cursor-pointer ${
-              acFilter === "AC"
-                ? "bg-teal-700 text-white shadow-xs"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
-            }`}
-          >
-            <Wind className="w-3.5 h-3.5" />
-            <span>{t.acOnly}</span>
-          </button>
+          {/* Row 1: Categories (Multi-select) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs">
+            {/* All toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic(20);
+                setSelectedCategories([]);
+              }}
+              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${
+                selectedCategories.length === 0
+                  ? "bg-teal-700 text-white shadow-xs"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {selectedCategories.length === 0 && <Check className="w-3 h-3" />}
+              <span>{lang === "bn" ? "সকল ক্যাটাগরি" : "All"}</span>
+            </button>
 
-          {/* Free Chairs Toggle */}
-          <button
-            onClick={() => setFreeChairsFilter(!freeChairsFilter)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-semibold shrink-0 transition cursor-pointer ${
-              freeChairsFilter
-                ? "bg-emerald-600 text-white shadow-xs"
-                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-100"
-            }`}
-          >
-            <Armchair className="w-3.5 h-3.5" />
-            <span>{t.freeChairsNow}</span>
-          </button>
+            {/* Gents */}
+            <button
+              type="button"
+              onClick={() => toggleCategory("GENTS")}
+              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${
+                selectedCategories.includes("GENTS")
+                  ? "bg-teal-700 text-white shadow-xs"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {selectedCategories.includes("GENTS") && <Check className="w-3 h-3" />}
+              <span>👨 {t.gents}</span>
+            </button>
+
+            {/* Ladies */}
+            <button
+              type="button"
+              onClick={() => toggleCategory("LADIES")}
+              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${
+                selectedCategories.includes("LADIES")
+                  ? "bg-teal-700 text-white shadow-xs"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {selectedCategories.includes("LADIES") && <Check className="w-3 h-3" />}
+              <span>👩 {t.ladies}</span>
+            </button>
+
+            {/* Unisex */}
+            <button
+              type="button"
+              onClick={() => toggleCategory("UNISEX")}
+              className={`px-3 py-1.5 rounded-full font-bold shrink-0 transition flex items-center gap-1 cursor-pointer active:scale-95 ${
+                selectedCategories.includes("UNISEX")
+                  ? "bg-teal-700 text-white shadow-xs"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {selectedCategories.includes("UNISEX") && <Check className="w-3 h-3" />}
+              <span>👥 {t.unisex}</span>
+            </button>
+          </div>
+
+          {/* Row 2: Feature Toggles (Multi-select) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs">
+            {/* Free Chairs Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic(20);
+                setFreeChairsFilter(!freeChairsFilter);
+              }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${
+                freeChairsFilter
+                  ? "bg-emerald-600 text-white shadow-xs border border-emerald-600"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {freeChairsFilter ? (
+                <Check className="w-3 h-3" />
+              ) : (
+                <Armchair className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              )}
+              <span>{t.freeChairsNow}</span>
+            </button>
+
+            {/* AC Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic(20);
+                setIsAcFilter(!isAcFilter);
+              }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${
+                isAcFilter
+                  ? "bg-teal-700 text-white shadow-xs border border-teal-700"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {isAcFilter ? (
+                <Check className="w-3 h-3" />
+              ) : (
+                <Wind className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              )}
+              <span>{t.acOnly}</span>
+            </button>
+
+            {/* Zero Queue Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic(20);
+                setZeroQueueFilter(!zeroQueueFilter);
+              }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${
+                zeroQueueFilter
+                  ? "bg-amber-600 text-white shadow-xs border border-amber-600"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {zeroQueueFilter ? (
+                <Check className="w-3 h-3" />
+              ) : (
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
+              )}
+              <span>{lang === "bn" ? "০ অপেক্ষমাণ (কোন সিরিয়াল নেই)" : "No Waiting"}</span>
+            </button>
+
+            {/* Digital Payment Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic(20);
+                setDigitalPayFilter(!digitalPayFilter);
+              }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${
+                digitalPayFilter
+                  ? "bg-indigo-600 text-white shadow-xs border border-indigo-600"
+                  : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {digitalPayFilter ? (
+                <Check className="w-3 h-3" />
+              ) : (
+                <CreditCard className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+              )}
+              <span>{lang === "bn" ? "ডিজিটাল পে" : "Digital Pay"}</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -224,13 +377,13 @@ export default function HomePageClient({
         {loading ? (
           // Skeleton Loading
           Array.from({ length: 3 }).map((_, idx) => (
-            <div key={idx} className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs animate-pulse">
+            <div key={idx} className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700 shadow-xs animate-pulse">
               <div className="flex gap-3">
-                <div className="w-20 h-20 rounded-xl bg-slate-200 shrink-0" />
+                <div className="w-20 h-20 rounded-xl bg-slate-200 dark:bg-slate-700 shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-slate-200 rounded-md w-3/4" />
-                  <div className="h-3 bg-slate-200 rounded-md w-1/2" />
-                  <div className="h-6 bg-slate-200 rounded-lg w-1/3 mt-2" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-md w-3/4" />
+                  <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-md w-1/2" />
+                  <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded-lg w-1/3 mt-2" />
                 </div>
               </div>
             </div>
@@ -238,23 +391,18 @@ export default function HomePageClient({
         ) : saloons.length === 0 ? (
           // Empty State
           <div className="py-12 px-4 text-center">
-            <div className="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+            <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto mb-3">
               <Search className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-bold text-slate-800 mb-1">{t.noSalonsFound}</h3>
-            <p className="text-xs text-slate-500 mb-4 max-w-xs mx-auto">
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">{t.noSalonsFound}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs mx-auto">
               {lang === "bn"
                 ? "অন্য কোন এলাকা বা ফিল্টার নির্বাচন করে পুনরায় চেষ্টা করুন।"
                 : "Try clearing filters or searching for another area or service."}
             </p>
             <button
-              onClick={() => {
-                setCategoryFilter("ALL");
-                setAcFilter("ALL");
-                setFreeChairsFilter(false);
-                setSearchQuery("");
-              }}
-              className="text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 px-4 py-2 rounded-full border border-teal-200 transition"
+              onClick={clearAllFilters}
+              className="text-xs font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 px-4 py-2 rounded-full border border-teal-200 dark:border-teal-800 transition cursor-pointer"
             >
               {lang === "bn" ? "সব ফিল্টার মুছুন" : "Reset Filters"}
             </button>
@@ -268,19 +416,22 @@ export default function HomePageClient({
             return (
               <div
                 key={salon.id}
-                className="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-xs hover:shadow-md transition-all group relative"
+                className="bg-white dark:bg-slate-800/90 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-700 shadow-xs hover:shadow-md transition-all group relative"
               >
                 <div className="flex gap-3">
                   {/* Thumbnail */}
-                  <Link href={`/s/${salon.slug}`} className="relative w-22 h-22 rounded-xl overflow-hidden bg-slate-100 shrink-0">
+                  <Link href={`/s/${salon.slug}`} className="relative w-22 h-22 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0">
                     <img
                       src={
                         salon.coverImage ||
-                        "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400&auto=format&fit=crop&q=60"
+                        "/images/salon-placeholder.svg"
                       }
                       alt={salon.nameBn}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/salon-placeholder.svg";
+                      }}
                     />
                     {salon.isAc && (
                       <span className="absolute top-1 left-1 text-[9px] font-bold bg-teal-900/85 backdrop-blur-xs text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
@@ -296,14 +447,9 @@ export default function HomePageClient({
                       <div className="flex items-start justify-between gap-1">
                         <Link href={`/s/${salon.slug}`} className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <h3 className="font-bold text-[15px] leading-snug text-slate-900 group-hover:text-teal-700 transition truncate">
+                            <h3 className="font-bold text-[15px] leading-snug text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition truncate">
                               {lang === "bn" ? salon.nameBn : salon.nameEn}
                             </h3>
-                            {salon.code && (
-                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
-                                #{salon.code}
-                              </span>
-                            )}
                           </div>
                         </Link>
                         {/* Favorite Button */}
@@ -312,17 +458,18 @@ export default function HomePageClient({
                             triggerHaptic(25);
                             toggleFavorite(salon.id);
                           }}
-                          className={`p-1.5 rounded-full transition cursor-pointer shrink-0 ${
-                            isFav ? "text-rose-500 bg-rose-50" : "text-slate-300 hover:text-slate-500"
-                          }`}
+                          className={`p-1.5 rounded-full transition cursor-pointer shrink-0 ${isFav
+                            ? "text-rose-500 bg-rose-50 dark:bg-rose-950/60"
+                            : "text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400"
+                            }`}
                           title="Save to My Saloons"
                         >
                           <Heart className={`w-4 h-4 ${isFav ? "fill-rose-500" : ""}`} />
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                         <span className="truncate">{salon.address}</span>
                       </div>
                     </div>
@@ -330,29 +477,36 @@ export default function HomePageClient({
                     {/* Live Chair Status Pill & Wait Time */}
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       {hasFreeChairs ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                           <span>
                             {salon.freeChairs} {t.chairsAvailable}
                           </span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                           <span>{t.allChairsBusy}</span>
                         </span>
                       )}
 
                       {salon.totalQueue > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                          <Clock className="w-3 h-3 text-amber-600" />
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                           <span>
                             {salon.totalQueue} {t.queueWaiting} (~{salon.estWaitMins} {t.minutes})
                           </span>
                         </span>
                       ) : (
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500">
                           {lang === "bn" ? "কোন ওয়েটিং নেই" : "No queue"}
+                        </span>
+                      )}
+
+                      {salon.acceptsDigitalPayment !== false && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300">
+                          <CreditCard className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400" />
+                          <span>{lang === "bn" ? "ডিজিটাল পে" : "Digital Pay"}</span>
                         </span>
                       )}
                     </div>
@@ -360,7 +514,7 @@ export default function HomePageClient({
                 </div>
 
                 {/* CTA */}
-                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-end">
+                <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-end">
                   <Link
                     href={`/s/${salon.slug}`}
                     className="inline-flex items-center gap-1 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"

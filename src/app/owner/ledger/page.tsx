@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Edit2,
   Trash2,
+  ChevronDown,
 } from "lucide-react";
 
 export default function OwnerLedgerPage() {
@@ -542,28 +543,33 @@ export default function OwnerLedgerPage() {
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                     {t.categoryLabel}
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3.5 py-2.5 font-medium focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition cursor-pointer"
-                  >
-                    {entryType === "INCOME" ? (
-                      <>
-                        <option value="সার্ভিস বিল (Walk-in)">সার্ভিস বিল (Walk-in Cash)</option>
-                        <option value="প্রোডাক্ট বিক্রয় (Cosmetics Sale)">প্রোডাক্ট বিক্রয় (Cosmetics Sale)</option>
-                        <option value="টিপস ও অন্যান্য">টিপস ও অন্যান্য আয়</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="দোকানের খরচ (Utility/Tea)">দোকানের খরচ / চা-নাস্তা</option>
-                        <option value="কসমেটিকস ও ব্লেড ক্রয়">কসমেটিকস ও ব্লেড ক্রয়</option>
-                        <option value="বিদ্যুৎ বিল (Electricity)">বিদ্যুৎ বিল</option>
-                        <option value="দোকান ভাড়া (Rent)">দোকান ভাড়া</option>
-                        <option value="কর্মচারী বেতন (Staff)">কর্মচারী বেতন / বকশিস</option>
-                        <option value="অন্যান্য ব্যয়">অন্যান্য ব্যয়</option>
-                      </>
-                    )}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full text-xs font-semibold bg-slate-50 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3.5 py-3 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 appearance-none cursor-pointer pr-10 shadow-2xs transition"
+                    >
+                      {entryType === "INCOME" ? (
+                        <>
+                          <option value="সার্ভিস বিল (Walk-in)">💵 সার্ভিস বিল (Walk-in Cash)</option>
+                          <option value="প্রোডাক্ট বিক্রয় (Cosmetics Sale)">🧴 প্রোডাক্ট বিক্রয় (Cosmetics Sale)</option>
+                          <option value="টিপস ও অন্যান্য">✨ টিপস ও অন্যান্য আয়</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value="দোকানের খরচ (Utility/Tea)">☕ দোকানের খরচ / চা-নাস্তা</option>
+                          <option value="কসমেটিকস ও ব্লেড ক্রয়">🪒 কসমেটিকস ও ব্লেড ক্রয়</option>
+                          <option value="বিদ্যুৎ বিল (Electricity)">⚡ বিদ্যুৎ বিল</option>
+                          <option value="দোকান ভাড়া (Rent)">🏢 দোকান ভাড়া</option>
+                          <option value="কর্মচারী বেতন (Staff)">👥 কর্মচারী বেতন / বকশিস</option>
+                          <option value="অন্যান্য ব্যয়">📦 অন্যান্য ব্যয়</option>
+                        </>
+                      )}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-500 dark:text-slate-400">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Amount */}

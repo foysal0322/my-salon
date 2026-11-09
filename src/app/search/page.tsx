@@ -12,6 +12,7 @@ import {
   Clock,
   Sparkles,
   ChevronRight,
+  ChevronDown,
   Filter,
 } from "lucide-react";
 
@@ -122,35 +123,45 @@ export default function SearchPage() {
           <div className="grid grid-cols-2 gap-2 text-xs">
             {/* Category Dropdown */}
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-1">
+              <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {lang === "bn" ? "ক্যাটাগরি" : "Category"}
               </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-800 font-medium focus:outline-none focus:border-teal-500"
-              >
-                <option value="ALL">{lang === "bn" ? "সকল ধরন" : "All Types"}</option>
-                <option value="GENTS">{t.gents}</option>
-                <option value="LADIES">{t.ladies}</option>
-                <option value="UNISEX">{t.unisex}</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition cursor-pointer appearance-none pr-8"
+                >
+                  <option value="ALL">{lang === "bn" ? "সকল ধরন" : "All Types"}</option>
+                  <option value="GENTS">👨 {t.gents}</option>
+                  <option value="LADIES">👩 {t.ladies}</option>
+                  <option value="UNISEX">👥 {t.unisex}</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
             </div>
 
             {/* AC Dropdown */}
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-1">
+              <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {lang === "bn" ? "পরিবেশ" : "Environment"}
               </label>
-              <select
-                value={isAc}
-                onChange={(e) => setIsAc(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-slate-800 font-medium focus:outline-none focus:border-teal-500"
-              >
-                <option value="ALL">{lang === "bn" ? "সকল পরিবেশ" : "All"}</option>
-                <option value="AC">{t.acOnly}</option>
-                <option value="NON_AC">{t.nonAc}</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={isAc}
+                  onChange={(e) => setIsAc(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-700/80 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition cursor-pointer appearance-none pr-8"
+                >
+                  <option value="ALL">{lang === "bn" ? "সকল পরিবেশ" : "All"}</option>
+                  <option value="AC">{t.acOnly}</option>
+                  <option value="NON_AC">{t.nonAc}</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
             </div>
           </div>
         </div>

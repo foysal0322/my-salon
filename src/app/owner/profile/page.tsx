@@ -22,6 +22,8 @@ import {
   Smartphone,
   ChevronDown,
   Scissors,
+  MapPin,
+  Navigation,
 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -62,6 +64,12 @@ function OwnerProfileContent() {
   const [updatingProfile, setUpdatingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // GPS Coordinates State
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locatingGps, setLocatingGps] = useState(false);
+  const [gpsSuccessMsg, setGpsSuccessMsg] = useState("");
 
   // Subscription State
   const [subStatus, setSubStatus] = useState<any | null>(null);
@@ -135,6 +143,8 @@ function OwnerProfileContent() {
         setAcceptsDigitalPayment(Boolean(qrData.salon.acceptsDigitalPayment));
         setTotalChairs(qrData.salon.totalChairs || 3);
         setCoverImage(qrData.salon.coverImage || "");
+        setLatitude(qrData.salon.latitude ?? null);
+        setLongitude(qrData.salon.longitude ?? null);
       } else {
         const saloonsRes = await fetch(`/api/v1/owner/saloons?saloonId=${currentSalonId}`);
         const saloonsData = await saloonsRes.json();
@@ -150,6 +160,8 @@ function OwnerProfileContent() {
           setAcceptsDigitalPayment(Boolean(found.acceptsDigitalPayment));
           setTotalChairs(found.totalChairs || 3);
           setCoverImage(found.coverImage || "");
+          setLatitude(found.latitude ?? null);
+          setLongitude(found.longitude ?? null);
         }
       }
 
@@ -168,6 +180,43 @@ function OwnerProfileContent() {
     fetchSalonAndQr();
   }, [activeSalonId, user?.id]);
 
+  // Geolocation Handler
+  const handleGetCurrentLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      alert(lang === "bn" ? "আপনার ব্রাউজার বা ডিভাইসে GPS সাপোর্ট করে না।" : "Geolocation is not supported on this device.");
+      return;
+    }
+    setLocatingGps(true);
+    setGpsSuccessMsg("");
+    triggerHaptic(30);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = Number(pos.coords.latitude.toFixed(6));
+        const lng = Number(pos.coords.longitude.toFixed(6));
+        setLatitude(lat);
+        setLongitude(lng);
+        setLocatingGps(false);
+        setGpsSuccessMsg(
+          lang === "bn"
+            ? `সফলভাবে লোকেশন পাওয়া গেছে (${lat}, ${lng})!`
+            : `GPS location detected (${lat}, ${lng})!`
+        );
+        triggerHaptic(50);
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+        setLocatingGps(false);
+        alert(
+          lang === "bn"
+            ? "GPS লোকেশন পাওয়া যায়নি। ফোনের Location/GPS চালু আছে এবং ব্রাউজারে লোকেশন পারমিশন দেওয়া আছে কিনা চেক করুন।"
+            : "Could not retrieve GPS location. Please ensure location is enabled and permission is granted."
+        );
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  };
+
   // Profile Update
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,9 +227,10 @@ function OwnerProfileContent() {
 
     try {
       const res = await fetch(`/api/v1/owner/saloons`, {
-        method: "PATCH",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: salon.id,
           saloonId: salon.id,
           nameBn,
           nameEn,
@@ -191,6 +241,8 @@ function OwnerProfileContent() {
           acceptsDigitalPayment,
           totalChairs,
           coverImage,
+          latitude,
+          longitude,
         }),
       });
       const data = await res.json();
@@ -227,22 +279,28 @@ function OwnerProfileContent() {
         img.onload = async () => {
           const canvas = document.createElement("canvas");
           const maxW = 1280;
+          const maxH = 800;
           let w = img.width;
           let h = img.height;
-          if (w > maxW) {
-            h = Math.round((h * maxW) / w);
-            w = maxW;
+          if (w > maxW || h > maxH) {
+            const ratio = Math.min(maxW / w, maxH / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
           }
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, w, h);
+          }
+          const dataUrl = canvas.toDataURL("image/webp", 0.85);
 
           const res = await fetch("/api/v1/upload", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ dataUrl, folder: "salons" }),
+            body: JSON.stringify({ dataUrl, image: dataUrl, folder: "salons" }),
           });
           const data = await res.json();
           if (data.url) {
@@ -921,22 +979,110 @@ function OwnerProfileContent() {
               />
             </div>
 
-            {/* Category */}
+            {/* GPS Location Field & Button */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                {t.categoryLabel || (lang === "bn" ? "ক্যাটাগরি" : "Category")}
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  <span>{lang === "bn" ? "GPS লোকেশন (অক্ষাংশ ও দ্রাঘিমাংশ)" : "GPS Location (Lat, Lng)"}</span>
+                </label>
+                {latitude && longitude && (
+                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                    ✓ {lang === "bn" ? "সংরক্ষিত" : "Saved"}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    readOnly
+                    value={
+                      latitude && longitude
+                        ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+                        : ""
+                    }
+                    placeholder={lang === "bn" ? "যেমন: 23.746500, 90.376800" : "e.g. 23.746500, 90.376800"}
+                    className="w-full text-xs font-mono font-bold bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none dark:text-white"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGetCurrentLocation}
+                  disabled={locatingGps}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-bold transition shadow-xs cursor-pointer disabled:opacity-60"
+                  title={lang === "bn" ? "বর্তমান GPS লোকেশন নিন" : "Get Current Location"}
+                >
+                  <Navigation className={`w-3.5 h-3.5 ${locatingGps ? "animate-spin" : ""}`} />
+                  <span>
+                    {locatingGps
+                      ? (lang === "bn" ? "লোকেশন খোঁজা হচ্ছে..." : "Locating...")
+                      : (lang === "bn" ? "GPS লোকেশন নিন" : "Get GPS")}
+                  </span>
+                </button>
+              </div>
+
+              {gpsSuccessMsg && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                  {gpsSuccessMsg}
+                </p>
+              )}
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                {lang === "bn"
+                  ? "সেলুনে অবস্থানকালীন এই বাটনে চাপ দিন যাতে কাস্টমাররা ম্যাপে সেলুনের সঠিক দূরত্ব দেখতে পায়।"
+                  : "Tap while at your salon so customers see accurate distance on search and maps."}
+              </p>
+            </div>
+
+            {/* Category (Mobile-Friendly Touch Pills + Styled Dropdown) */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                {t.categoryLabel || (lang === "bn" ? "সেলুনের ধরন / ক্যাটাগরি" : "Salon Category")}
               </label>
+
+              {/* Mobile-Friendly Touch Pills */}
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                {[
+                  { id: "GENTS", labelBn: "জেন্টস", labelEn: "Gents", icon: "👨" },
+                  { id: "LADIES", labelBn: "লেডিস", labelEn: "Ladies", icon: "👩" },
+                  { id: "UNISEX", labelBn: "ইউনিসেক্স", labelEn: "Unisex", icon: "👥" },
+                ].map((cat) => {
+                  const isSelected = category === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic(15);
+                        setCategory(cat.id);
+                      }}
+                      className={`py-2 px-1.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
+                        isSelected
+                          ? "bg-teal-50 dark:bg-teal-950/60 border-teal-600 text-teal-800 dark:text-teal-200 shadow-xs ring-1 ring-teal-500/20"
+                          : "bg-slate-50 dark:bg-slate-700/50 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600/60"
+                      }`}
+                    >
+                      <span className="text-sm leading-none">{cat.icon}</span>
+                      <span className="text-[11px]">{lang === "bn" ? cat.labelBn : cat.labelEn}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Enhanced Mobile-friendly Select Dropdown */}
               <div className="relative">
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full text-sm bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none appearance-none cursor-pointer dark:text-white pr-8"
+                  className="w-full text-xs font-semibold bg-slate-50 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600 rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 appearance-none cursor-pointer dark:text-white pr-9 shadow-2xs"
                 >
-                  <option value="GENTS">{t.gents}</option>
-                  <option value="LADIES">{t.ladies}</option>
-                  <option value="UNISEX">{t.unisex}</option>
+                  <option value="GENTS">👨 {t.gents}</option>
+                  <option value="LADIES">👩 {t.ladies}</option>
+                  <option value="UNISEX">👥 {t.unisex}</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 dark:text-slate-400">
                   <ChevronDown className="w-4 h-4" />
                 </div>
               </div>
