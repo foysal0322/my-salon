@@ -177,7 +177,7 @@ export async function GET(request: Request) {
         let parsed = [];
         try {
           parsed = JSON.parse(b.servicesJson);
-        } catch (e) {}
+        } catch (e) { }
         return {
           ...b,
           services: parsed,
@@ -229,7 +229,7 @@ export async function GET(request: Request) {
       let parsedServices = [];
       try {
         parsedServices = JSON.parse(booking.servicesJson);
-      } catch (e) {}
+      } catch (e) { }
 
       return NextResponse.json({
         booking: {
@@ -264,66 +264,68 @@ export async function GET(request: Request) {
           estWaitMins,
           isCurrentTurn:
             booking.status === "IN_SERVICE" ||
-            booking.tokenNumber <= booking.saloon.currentServingToken ||
-            (booking.status === "WAITING" && totalQueueAhead === 0 && (booking.saloon.totalChairs - booking.saloon.busyChairs > 0)),
-        },
+            (booking.status === "WAITING" && (
+              booking.tokenNumber <= booking.saloon.currentServingToken ||
+              (totalQueueAhead === 0 && (booking.saloon.totalChairs - booking.saloon.busyChairs > 0))
+            )),
+      },
       });
-    }
+  }
 
     // List user's bookings
     const whereClause: any = {};
-    if (userId) {
-      whereClause.OR = [{ customerId: userId }];
-      if (phone) whereClause.OR.push({ guestPhone: phone });
-    } else if (phone) {
-      whereClause.guestPhone = phone;
-    } else {
-      return NextResponse.json(
-        { error: "ইউজার আইডি, ফোন নম্বর অথবা সেলুন আইডি প্রয়োজন।" },
-        { status: 400 }
-      );
-    }
-
-    const bookings = await prisma.booking.findMany({
-      where: whereClause,
-      include: {
-        saloon: {
-          select: {
-            id: true,
-            slug: true,
-            nameBn: true,
-            nameEn: true,
-            address: true,
-            phone: true,
-            currentServingToken: true,
-            totalChairs: true,
-            busyChairs: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    });
-
-    const enriched = bookings.map((b) => {
-      let parsed = [];
-      try {
-        parsed = JSON.parse(b.servicesJson);
-      } catch (e) {}
-      return {
-        ...b,
-        services: parsed,
-      };
-    });
-
-    return NextResponse.json({ bookings: enriched });
-  } catch (error: any) {
-    console.error("Booking fetch error:", error);
+  if (userId) {
+    whereClause.OR = [{ customerId: userId }];
+    if (phone) whereClause.OR.push({ guestPhone: phone });
+  } else if (phone) {
+    whereClause.guestPhone = phone;
+  } else {
     return NextResponse.json(
-      { error: "বুকিং তালিকা লোড করতে সমস্যা হয়েছে।" },
-      { status: 500 }
+      { error: "ইউজার আইডি, ফোন নম্বর অথবা সেলুন আইডি প্রয়োজন।" },
+      { status: 400 }
     );
   }
+
+  const bookings = await prisma.booking.findMany({
+    where: whereClause,
+    include: {
+      saloon: {
+        select: {
+          id: true,
+          slug: true,
+          nameBn: true,
+          nameEn: true,
+          address: true,
+          phone: true,
+          currentServingToken: true,
+          totalChairs: true,
+          busyChairs: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
+
+  const enriched = bookings.map((b) => {
+    let parsed = [];
+    try {
+      parsed = JSON.parse(b.servicesJson);
+    } catch (e) { }
+    return {
+      ...b,
+      services: parsed,
+    };
+  });
+
+  return NextResponse.json({ bookings: enriched });
+} catch (error: any) {
+  console.error("Booking fetch error:", error);
+  return NextResponse.json(
+    { error: "বুকিং তালিকা লোড করতে সমস্যা হয়েছে।" },
+    { status: 500 }
+  );
+}
 }
 
 export async function PATCH(request: Request) {

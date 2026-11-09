@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
@@ -36,7 +36,9 @@ function BookingsContent() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [hasAlertedTurn, setHasAlertedTurn] = useState(false);
+  const alertedTurnRef = useRef<Record<string, boolean>>({});
+  const activeBookingIdRef = useRef<string | null>(activeBookingIdParam || null);
+  const isFinishedRef = useRef<boolean>(false);
 
   // Fetch active booking tracker
   const fetchActiveBooking = async (id: string) => {
@@ -47,8 +49,27 @@ function BookingsContent() {
         setActiveBooking({ ...data.booking, saloon: data.saloon });
         setQueueMetrics(data.queueMetrics);
 
-        // Turn arrived notification
-        if (data.queueMetrics?.isCurrentTurn && !hasAlertedTurn) {
+        const status = data.booking.status;
+        if (["COMPLETED", "CANCELLED", "NO_SHOW"].includes(status)) {
+          isFinishedRef.current = true;
+          return;
+        }
+
+        // Turn arrived notification - ONLY when WAITING and NOT already alerted
+        const isCurrentTurn = Boolean(data.queueMetrics?.isCurrentTurn);
+        const isWaiting = status === "WAITING";
+        const alreadyAlerted =
+          alertedTurnRef.current[data.booking.id] ||
+          (typeof window !== "undefined" &&
+            (localStorage.getItem(`amarsalon_alerted_${data.booking.id}`) === "true" ||
+              localStorage.getItem(`amarsaloon_alerted_${data.booking.id}`) === "true"));
+
+        if (isCurrentTurn && isWaiting && !alreadyAlerted) {
+          alertedTurnRef.current[data.booking.id] = true;
+          try {
+            localStorage.setItem(`amarsalon_alerted_${data.booking.id}`, "true");
+          } catch (e) { }
+
           playNotificationChime("urgent");
           triggerDeviceHaptic([200, 100, 200, 100, 300]);
           sendBrowserNotification(
@@ -63,7 +84,6 @@ function BookingsContent() {
               url: `/bookings?active=${data.booking.id}`,
             }
           );
-          setHasAlertedTurn(true);
         }
       }
     } catch (e) {
@@ -127,15 +147,23 @@ function BookingsContent() {
   };
 
   useEffect(() => {
+    activeBookingIdRef.current = activeBooking?.id || activeBookingIdParam || null;
+    if (activeBooking && ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(activeBooking.status)) {
+      isFinishedRef.current = true;
+    }
+  }, [activeBooking, activeBookingIdParam]);
+
+  useEffect(() => {
     if (activeBookingIdParam) {
       fetchActiveBooking(activeBookingIdParam);
     }
     fetchUserBookings();
 
-    // Auto refresh active tracker every 10 seconds
+    // Auto refresh active tracker every 10 seconds (stops when service completed/cancelled)
     const interval = setInterval(() => {
-      if (activeBookingIdParam || activeBooking?.id) {
-        fetchActiveBooking(activeBookingIdParam || activeBooking.id);
+      const currentTargetId = activeBookingIdRef.current;
+      if (currentTargetId && !isFinishedRef.current) {
+        fetchActiveBooking(currentTargetId);
       }
     }, 10000);
 
@@ -296,6 +324,23 @@ function BookingsContent() {
                 <span>{cancelling ? t.loading : t.cancelBooking}</span>
               </button>
             </div>
+          </div>
+        ) : null}
+
+        {/* COMPLETED SERVICE NOTIFICATION CARD */}
+        {activeBooking && activeBooking.status === "COMPLETED" ? (
+          <div className="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-3xl p-5 text-center space-y-2 animate-in fade-in shadow-xs">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="font-bold text-sm text-emerald-900 dark:text-emerald-200">
+              {lang === "bn" ? "সার্ভিসটি সফলভাবে সম্পন্ন হয়েছে!" : "Service Completed!"}
+            </h3>
+            <p className="text-xs text-emerald-700 dark:text-emerald-400">
+              {lang === "bn"
+                ? `${activeBooking.saloon?.nameBn || "সেলুন"} এ আসার জন্য ধন্যবাদ।`
+                : `Thank you for visiting ${activeBooking.saloon?.nameEn || "the salon"}.`}
+            </p>
           </div>
         ) : null}
 

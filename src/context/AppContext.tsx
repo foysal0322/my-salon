@@ -115,9 +115,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const savedActiveBooking =
         localStorage.getItem("amarsalon_active_booking_id") ||
-        localStorage.getItem("amarsaloon_active_booking_id") ||
-        localStorage.getItem("amarsalon_last_booking_id") ||
-        localStorage.getItem("amarsaloon_last_booking_id");
+      localStorage.getItem("amarsaloon_active_booking_id");
       if (savedActiveBooking) {
         setActiveBookingIdState(savedActiveBooking);
       }
@@ -175,6 +173,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } else {
         localStorage.removeItem("amarsalon_active_booking_id");
         localStorage.removeItem("amarsaloon_active_booking_id");
+        localStorage.removeItem("amarsalon_last_booking_id");
+        localStorage.removeItem("amarsaloon_last_booking_id");
       }
     } catch (e) { }
   };
@@ -233,54 +233,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // When user's serial is available / current turn
-        if (isCurrentTurn) {
-          const alertedKey = `amarsalon_alerted_${activeBookingId}`;
-          const alreadyAlerted =
-            localStorage.getItem(alertedKey) === "true" ||
-            localStorage.getItem(`amarsaloon_alerted_${activeBookingId}`) === "true";
+          // When user's serial is available / current turn (only when waiting)
+          if (isCurrentTurn && status === "WAITING") {
+            const alertedKey = `amarsalon_alerted_${activeBookingId}`;
+            const alreadyAlerted =
+              localStorage.getItem(alertedKey) === "true" ||
+              localStorage.getItem(`amarsaloon_alerted_${activeBookingId}`) === "true";
 
-          if (!alreadyAlerted) {
-            try {
-              localStorage.setItem(alertedKey, "true");
-            } catch (e) { }
+            if (!alreadyAlerted) {
+              try {
+                localStorage.setItem(alertedKey, "true");
+              } catch (e) { }
 
-            playNotificationChime("urgent");
-            triggerDeviceHaptic([200, 100, 200, 100, 300]);
+              playNotificationChime("urgent");
+              triggerDeviceHaptic([200, 100, 200, 100, 300]);
 
-            const title =
-              lang === "bn"
-                ? `🎉 আপনার সিরিয়াল এসেছে! #${data.booking.tokenNumber}`
-                : `🎉 Your Turn Has Arrived! #${data.booking.tokenNumber}`;
-            const message =
-              lang === "bn"
-                ? `${data.saloon?.nameBn || "সেলুন"} এ আপনার চেয়ার প্রস্তুত। এখনই প্রবেশ করুন!`
-                : `Your chair is ready at ${data.saloon?.nameEn || "the salon"}. Please enter now!`;
+              const title =
+                lang === "bn"
+                  ? `🎉 আপনার সিরিয়াল এসেছে! #${data.booking.tokenNumber}`
+                  : `🎉 Your Turn Has Arrived! #${data.booking.tokenNumber}`;
+              const message =
+                lang === "bn"
+                  ? `${data.saloon?.nameBn || "সেলুন"} এ আপনার চেয়ার প্রস্তুত। এখনই প্রবেশ করুন!`
+                  : `Your chair is ready at ${data.saloon?.nameEn || "the salon"}. Please enter now!`;
 
-            sendBrowserNotification(title, {
-              body: message,
-              url: `/bookings?active=${activeBookingId}`,
-            });
+              sendBrowserNotification(title, {
+                body: message,
+                url: `/bookings?active=${activeBookingId}`,
+              });
 
-            setNotificationToast({
-              id: `user_turn_${Date.now()}`,
-              title,
-              message,
-              url: `/bookings?active=${activeBookingId}`,
-              type: "USER_TURN_READY",
-            });
+              setNotificationToast({
+                id: `user_turn_${Date.now()}`,
+                title,
+                message,
+                url: `/bookings?active=${activeBookingId}`,
+                type: "USER_TURN_READY",
+              });
+            }
           }
-        }
-      } catch (e) { }
-    };
+        } catch (e) { }
+      };
 
-    checkCustomerTurn();
-    const interval = setInterval(checkCustomerTurn, 4000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [activeBookingId, lang]);
+      checkCustomerTurn();
+      const interval = setInterval(checkCustomerTurn, 4000);
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+      };
+    }, [activeBookingId, lang]);
 
   // Real-time background poller: Salon Owner Live Serial Notification
   useEffect(() => {
