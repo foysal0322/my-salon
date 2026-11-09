@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import { useApp } from "@/context/AppContext";
 import {
-  TrendingUp,
-  TrendingDown,
+  Plus,
+  Minus,
   Download,
   FileSpreadsheet,
   FileText,
@@ -213,9 +213,8 @@ export default function OwnerLedgerPage() {
         <div className="grid grid-cols-2 gap-3 text-center">
           {/* Current Month Income */}
           <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 border border-emerald-100 dark:border-emerald-950/60 shadow-xs flex flex-col justify-center items-center">
-            <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>{t.thisMonthIncome || (lang === "bn" ? "চলতি মাসের আয়" : "This Month's Income")}</span>
+            <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+              {t.thisMonthIncome || (lang === "bn" ? "চলতি মাসের আয়" : "This Month's Income")}
             </p>
             <p className="text-xl font-black text-emerald-800 dark:text-emerald-300 font-mono mt-1.5">
               ৳{(summary.thisMonthIncome ?? summary.totalIncome).toLocaleString()}
@@ -224,9 +223,8 @@ export default function OwnerLedgerPage() {
 
           {/* Current Month Expense */}
           <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 border border-rose-100 dark:border-rose-950/60 shadow-xs flex flex-col justify-center items-center">
-            <p className="text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
-              <TrendingDown className="w-3.5 h-3.5" />
-              <span>{t.thisMonthExpense || (lang === "bn" ? "চলতি মাসের ব্যয়" : "This Month's Expense")}</span>
+            <p className="text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider">
+              {t.thisMonthExpense || (lang === "bn" ? "চলতি মাসের ব্যয়" : "This Month's Expense")}
             </p>
             <p className="text-xl font-black text-rose-800 dark:text-rose-300 font-mono mt-1.5">
               ৳{(summary.thisMonthExpense ?? summary.totalExpense).toLocaleString()}
@@ -240,7 +238,7 @@ export default function OwnerLedgerPage() {
             onClick={() => handleOpenAdd("INCOME")}
             className="flex items-center justify-center gap-1.5 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 font-bold text-xs hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition shadow-xs cursor-pointer"
           >
-            <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <span>{t.addIncome}</span>
           </button>
 
@@ -248,7 +246,7 @@ export default function OwnerLedgerPage() {
             onClick={() => handleOpenAdd("EXPENSE")}
             className="flex items-center justify-center gap-1.5 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800 font-bold text-xs hover:bg-rose-100 dark:hover:bg-rose-900/60 transition shadow-xs cursor-pointer"
           >
-            <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+            <Minus className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span>{t.addExpense}</span>
           </button>
         </div>
@@ -293,9 +291,9 @@ export default function OwnerLedgerPage() {
                         }`}
                       >
                         {isIncome ? (
-                          <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         ) : (
-                          <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                          <Minus className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                         )}
                       </div>
 
@@ -354,8 +352,8 @@ export default function OwnerLedgerPage() {
                     className="text-xs font-semibold text-teal-700 dark:text-teal-400 hover:underline cursor-pointer"
                   >
                     {lang === "bn"
-                      ? `সব (${entries.length}টি) লেনদেন দেখতে রিপোর্ট এক্সপোর্ট করুন →`
-                      : `Export report to view all (${entries.length}) transactions →`}
+                      ? `সব (${entries.length}টি) লেনদেন দেখতে রিপোর্ট এক্সপোর্ট করুন`
+                      : `Export report to view all (${entries.length}) transactions`}
                   </button>
                 </div>
               )}
@@ -626,9 +624,9 @@ export default function OwnerLedgerPage() {
                     }`}
                   >
                     {entryType === "INCOME" ? (
-                      <TrendingUp className="w-4 h-4" />
+                      <Plus className="w-4 h-4" />
                     ) : (
-                      <TrendingDown className="w-4 h-4" />
+                      <Minus className="w-4 h-4" />
                     )}
                     <span>
                       {submitting
