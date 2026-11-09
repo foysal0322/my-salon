@@ -144,46 +144,68 @@ export async function GET(
       const salonCode = salon?.code || (id ? id.slice(0, 6).toUpperCase() : "1051");
       const salonOwnerName = salon?.owner?.name || (salon?.nameEn ? `${salon.nameEn} Management` : "Proprietor");
 
+      // Date formatter helper (e.g. 2026-11-09 -> 09 Nov 2026)
+      const formatDisplayDate = (d: string | Date | null | undefined): string => {
+        if (!d) return "";
+        try {
+          if (typeof d === "string") {
+            const parts = d.split("-");
+            if (parts.length === 3) {
+              const year = parseInt(parts[0], 10);
+              const month = parseInt(parts[1], 10) - 1;
+              const day = parseInt(parts[2], 10);
+              const dt = new Date(year, month, day);
+              return dt.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              });
+            }
+          }
+          const dt = typeof d === "string" ? new Date(d) : d;
+          return dt.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          });
+        } catch {
+          return String(d);
+        }
+      };
+
+      const statementDate = formatDisplayDate(now);
+
       // Range description in English
       let rangeLabelEn = "This Month";
       if (range === "7days") {
         const past7 = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
         const past7Str = past7.toISOString().split("T")[0];
-        rangeLabelEn = `Last 7 Days (${past7Str} to ${todayStr})`;
+        rangeLabelEn = `${formatDisplayDate(past7Str)} – ${formatDisplayDate(todayStr)}`;
       } else if (range === "15days") {
         const past15 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
         const past15Str = past15.toISOString().split("T")[0];
-        rangeLabelEn = `Last 15 Days (${past15Str} to ${todayStr})`;
+        rangeLabelEn = `${formatDisplayDate(past15Str)} – ${formatDisplayDate(todayStr)}`;
       } else if (range === "30days") {
         const past30 = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
         const past30Str = past30.toISOString().split("T")[0];
-        rangeLabelEn = `Last 30 Days (${past30Str} to ${todayStr})`;
+        rangeLabelEn = `${formatDisplayDate(past30Str)} – ${formatDisplayDate(todayStr)}`;
       } else if (range === "custom") {
         if (startDate && endDate) {
-          rangeLabelEn = `${startDate} to ${endDate}`;
+          rangeLabelEn = `${formatDisplayDate(startDate)} – ${formatDisplayDate(endDate)}`;
         } else if (startDate) {
-          rangeLabelEn = `From ${startDate}`;
+          rangeLabelEn = `From ${formatDisplayDate(startDate)}`;
         } else if (endDate) {
-          rangeLabelEn = `Up to ${endDate}`;
+          rangeLabelEn = `Up to ${formatDisplayDate(endDate)}`;
         }
       } else if (period === "daily") {
-        rangeLabelEn = `Today (${todayStr})`;
+        rangeLabelEn = formatDisplayDate(todayStr);
       } else if (period === "yearly") {
         rangeLabelEn = `Year ${currentYear}`;
       } else {
-        rangeLabelEn = `This Month (${currentMonthPrefix})`;
+        rangeLabelEn = now.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
       }
 
       const statementRef = `AS-STM-${salonCode}-${now.toISOString().slice(2, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
-      const statementIssueDate = now.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }) + " " + now.toLocaleTimeString("en-GB", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
 
       // Sort entries chronologically (earliest to latest) for bank running balance calculation
       const statementEntries = [...entries].sort((a, b) => {
@@ -199,15 +221,15 @@ export async function GET(
       let runningBalance = 0;
       const rowsHtml = statementEntries.length === 0
         ? `<tr><td colspan="5" class="empty-state">No transactions recorded for this period.</td></tr>`
-          : statementEntries.map((item) => {
-            const isIncome = item.type === "INCOME";
-            const debitAmount = !isIncome ? item.amount : 0;
-            const creditAmount = isIncome ? item.amount : 0;
-            runningBalance += (creditAmount - debitAmount);
+        : statementEntries.map((item) => {
+          const isIncome = item.type === "INCOME";
+          const debitAmount = !isIncome ? item.amount : 0;
+          const creditAmount = isIncome ? item.amount : 0;
+          runningBalance += (creditAmount - debitAmount);
 
-      return `
+          return `
             <tr>
-              <td class="col-date font-mono">${item.entryDate}</td>
+              <td class="col-date font-mono">${formatDisplayDate(item.entryDate)}</td>
               <td class="col-desc">
                 <div class="desc-main">${item.category}</div>
                 ${item.note ? `<div class="desc-sub">${item.note}</div>` : ""}
@@ -223,7 +245,7 @@ export async function GET(
               </td>
             </tr>
           `;
-    }).join("");
+        }).join("");
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -454,7 +476,7 @@ export async function GET(
       <div class="header-details">
         <div class="salon-name">${salonName}</div>
         <div>Period: ${rangeLabelEn}</div>
-        <div>Date: ${statementIssueDate.split(" ")[0]}</div>
+        <div>Date: ${statementDate}</div>
       </div>
     </div>
 

@@ -29,15 +29,22 @@ export default function OwnerLedgerPage() {
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const formatLocalDate = (d: Date = new Date()) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   // Export Modal state
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportRange, setExportRange] = useState<"7days" | "15days" | "30days" | "custom">("30days");
   const [customStartDate, setCustomStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
-    return d.toISOString().split("T")[0];
+    return formatLocalDate(d);
   });
-  const [customEndDate, setCustomEndDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [customEndDate, setCustomEndDate] = useState(() => formatLocalDate());
 
   // Modal State for adding/editing entry
   const [showAddModal, setShowAddModal] = useState(false);
@@ -46,7 +53,7 @@ export default function OwnerLedgerPage() {
   const [category, setCategory] = useState("সার্ভিস বিল (Walk-in)");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
-  const [entryDate, setEntryDate] = useState(new Date().toISOString().split("T")[0]);
+  const [entryDate, setEntryDate] = useState(() => formatLocalDate());
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -103,7 +110,7 @@ export default function OwnerLedgerPage() {
     setCategory(type === "INCOME" ? "সার্ভিস বিল (Walk-in)" : "দোকানের খরচ (Utility)");
     setAmount("");
     setNote("");
-    setEntryDate(new Date().toISOString().split("T")[0]);
+    setEntryDate(formatLocalDate());
     setErrorMessage("");
     setShowAddModal(true);
   };
@@ -115,7 +122,7 @@ export default function OwnerLedgerPage() {
     setCategory(item.category);
     setAmount(item.amount.toString());
     setNote(item.note || "");
-    setEntryDate(item.entryDate || new Date().toISOString().split("T")[0]);
+    setEntryDate(item.entryDate || formatLocalDate());
     setErrorMessage("");
     setShowAddModal(true);
   };
