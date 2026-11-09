@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Smartphone,
   ChevronDown,
+  Scissors,
 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -342,16 +343,22 @@ function OwnerProfileContent() {
     c.closePath();
   };
 
-  // Helper to draw scissors icon in center of QR
-  const drawScissorsIcon = (c: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+  // Helper to draw scissors logo on canvas
+  const drawSalonLogo = (c: CanvasRenderingContext2D, x: number, y: number, r: number) => {
     c.save();
-    c.fillStyle = "#0D9488";
+    // Circular badge
     c.beginPath();
     c.arc(x, y, r, 0, Math.PI * 2);
+    c.fillStyle = "#FDE047"; // Golden Amber
     c.fill();
-
+    c.lineWidth = 3.5;
     c.strokeStyle = "#FFFFFF";
-    c.lineWidth = Math.max(3, r * 0.12);
+    c.stroke();
+
+    // Stylized Scissors Icon inside badge
+    c.strokeStyle = "#0F172A"; // Dark slate
+    c.fillStyle = "#0F172A";
+    c.lineWidth = 4;
     c.lineCap = "round";
 
     // Left blade to right handle
@@ -368,7 +375,7 @@ function OwnerProfileContent() {
 
     // Center screw
     c.beginPath();
-    c.arc(x, y - r * 0.05, Math.max(3, r * 0.1), 0, Math.PI * 2);
+    c.arc(x, y - r * 0.05, 4, 0, Math.PI * 2);
     c.fillStyle = "#FFFFFF";
     c.fill();
 
@@ -395,9 +402,9 @@ function OwnerProfileContent() {
 
     try {
       const canvas = document.createElement("canvas");
-      // Standard 8.5" x 5.5" (Half-Letter portrait: 5.5" W x 8.5" H) in ultra-crisp 300 DPI (1650 x 2550 px)
-      const width = 1650;
-      const height = 2550;
+      // Standard print poster size (12" x 18" standard commercial print ratio 2:3) in crisp 1200 x 1800 px
+      const width = 1200;
+      const height = 1800;
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
@@ -407,192 +414,203 @@ function OwnerProfileContent() {
       ctx.fillStyle = "#0D9488";
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Poster border line with rounded corners (48px radius)
+      // 2. Poster border line with rounded corners (44px radius)
       ctx.beginPath();
-      drawRoundRect(ctx, 40, 40, width - 80, height - 80, 48);
-      ctx.lineWidth = 4;
+      drawRoundRect(ctx, 40, 40, width - 80, height - 80, 44);
       ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
+      ctx.lineWidth = 3.5;
       ctx.stroke();
 
-      // 3. Top Brand Pill: "AmarSalon.com"
-      const pillW = 440;
-      const pillH = 72;
-      const pillX = (width - pillW) / 2;
-      const pillY = 110;
-      drawRoundRect(ctx, pillX, pillY, pillW, pillH, 36);
-      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
-      ctx.fill();
-
+      // 3. Top Heading: Large bold heading
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 32px 'Hind Siliguri', 'Inter', sans-serif";
+      ctx.font = "bold 66px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("AmarSalon.com", width / 2, pillY + pillH / 2);
+      ctx.fillText("অনলাইনে সিরিয়াল দিতে স্ক্যান করুন", width / 2, 135);
 
-      // 4. Bengali Headline: "সিরিয়ালের ঝামেলা শেষ"
-      ctx.font = "900 68px 'Hind Siliguri', sans-serif";
+      ctx.fillStyle = "#FDE047"; // Golden Amber
+      ctx.font = "bold 30px sans-serif";
+      ctx.fillText("SCAN WITH PHONE CAMERA TO BOOK ONLINE", width / 2, 205);
+
+      // 4. Central QR Code Box (Crisp white box with rounded corners for scanning contrast)
+      const qrBoxSize = 580;
+      const qrBoxX = (width - qrBoxSize) / 2;
+      const qrBoxY = 260;
+
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillText("সিরিয়ালের ঝামেলা শেষ!", width / 2, 280);
-
-      // 5. English Subtitle: "Scan & Reserve Your Salon Seat"
-      ctx.font = "bold 32px 'Inter', sans-serif";
-      ctx.fillStyle = "rgba(255, 255, 255, 0.90)";
-      ctx.fillText("Scan & Reserve Your Salon Seat", width / 2, 345);
-
-      // 6. Central White QR Card with shadow
-      const cardW = 1250;
-      const cardH = 1420;
-      const cardX = (width - cardW) / 2;
-      const cardY = 410;
-
-      ctx.save();
-      ctx.shadowColor = "rgba(0, 0, 0, 0.28)";
-      ctx.shadowBlur = 45;
-      ctx.shadowOffsetY = 22;
-      drawRoundRect(ctx, cardX, cardY, cardW, cardH, 56);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fill();
-      ctx.restore();
-
-      // Card Header: Salon Name (Bengali & English)
-      const displayName = salon?.nameBn || salon?.nameEn || (lang === "bn" ? "আমাদের সেলুন" : "Our Salon");
-      ctx.font = "bold 64px 'Hind Siliguri', sans-serif";
-      ctx.fillStyle = "#111827";
-      ctx.fillText(displayName, width / 2, cardY + 115);
-
-      if (salon?.nameEn && salon?.nameBn) {
-        ctx.font = "500 32px 'Inter', sans-serif";
-        ctx.fillStyle = "#6B7280";
-        ctx.fillText(salon.nameEn, width / 2, cardY + 175);
-      }
-
-      // Draw QR Code Image
-      const qrImg = new Image();
-      qrImg.crossOrigin = "anonymous";
-      await new Promise<void>((resolve, reject) => {
-        qrImg.onload = () => resolve();
-        qrImg.onerror = reject;
-        qrImg.src = qrDataUrl;
-      });
-
-      const qrSize = 780;
-      const qrX = (width - qrSize) / 2;
-      const qrY = cardY + 230;
-      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-
-      // Center Scissors Accent in QR Code
-      drawScissorsIcon(ctx, width / 2, qrY + qrSize / 2, 54);
-
-      // Instruction Box inside Card
-      const instBoxW = cardW - 120;
-      const instBoxH = 150;
-      const instBoxX = (width - instBoxW) / 2;
-      const instBoxY = cardY + 1070;
-
-      drawRoundRect(ctx, instBoxX, instBoxY, instBoxW, instBoxH, 28);
-      ctx.fillStyle = "#F8FAFC";
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "#E2E8F0";
-      ctx.stroke();
-
-      ctx.font = "bold 34px 'Hind Siliguri', sans-serif";
-      ctx.fillStyle = "#0F766E";
-      ctx.fillText("মোবাইল ক্যামেরা দিয়ে স্ক্যান করুন", width / 2, instBoxY + 54);
-
-      ctx.font = "500 24px 'Hind Siliguri', sans-serif";
-      ctx.fillStyle = "#64748B";
-      ctx.fillText("কোনো অ্যাপ নামানো লাগবে না • সরাসরি ব্রাউজারে খুলবে", width / 2, instBoxY + 104);
-
-      // Salon Code Badge
-      const salonCode = salon?.customCode || salon?.code || (salon?.id ? salon.id.slice(0, 6).toUpperCase() : "1051");
-      const badgeW = 420;
-      const badgeH = 80;
-      const badgeX = (width - badgeW) / 2;
-      const badgeY = cardY + cardH - 110;
-
-      drawRoundRect(ctx, badgeX, badgeY, badgeW, badgeH, 40);
-      ctx.fillStyle = "#F0FDFA";
+      ctx.beginPath();
+      drawRoundRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, 28);
       ctx.fill();
       ctx.lineWidth = 2.5;
-      ctx.strokeStyle = "#99F6E4";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
       ctx.stroke();
 
-      ctx.font = "bold 30px 'Inter', sans-serif";
-      ctx.fillStyle = "#0F766E";
-      ctx.fillText(`SALON CODE: ${salonCode}`, width / 2, badgeY + badgeH / 2);
+      // Ensure QR image is fully decoded into memory before drawing
+      const qrImg = new Image();
+      qrImg.crossOrigin = "anonymous";
+      qrImg.src = qrDataUrl;
+      try {
+        if (typeof qrImg.decode === "function") {
+          await qrImg.decode();
+        } else {
+          await new Promise<void>((resolve) => {
+            qrImg.onload = () => resolve();
+            qrImg.onerror = () => resolve();
+            if (qrImg.complete) resolve();
+          });
+        }
+      } catch {
+        await new Promise<void>((resolve) => {
+          qrImg.onload = () => resolve();
+          qrImg.onerror = () => resolve();
+          if (qrImg.complete) resolve();
+        });
+      }
 
-      // 7. 3-Step Guide Below Card
-      const stepY = cardY + cardH + 70;
+      const qrPadding = 28;
+      ctx.drawImage(
+        qrImg,
+        qrBoxX + qrPadding,
+        qrBoxY + qrPadding,
+        qrBoxSize - qrPadding * 2,
+        qrBoxSize - qrPadding * 2
+      );
+
+      // 5. Short URL & Salon ID Highlight (Bigger fonts)
+      const idBadgeWidth = 460;
+      const idBadgeY = qrBoxY + qrBoxSize + 35;
+      ctx.fillStyle = "#0F172A"; // Dark slate pill
+      ctx.beginPath();
+      drawRoundRect(ctx, (width - idBadgeWidth) / 2, idBadgeY, idBadgeWidth, 70, 35);
+      ctx.fill();
+
+      const salonCode = salon?.customCode || salon?.code || (salon?.id ? salon.id.slice(0, 6).toUpperCase() : "1051");
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 32px sans-serif";
+      ctx.fillText(`সেলুন কোড / ID: #${salonCode}`, width / 2, idBadgeY + 35);
+
+      // Direct domain link in golden amber: amarsalon.xyz
+      ctx.fillStyle = "#FDE047";
+      ctx.font = "bold 44px monospace";
+      ctx.fillText(`amarsalon.xyz/${salonCode}`, width / 2, idBadgeY + 120);
+
+      // 6. 3 Steps Box (Increased font size & expanded container)
+      const stepBoxY = idBadgeY + 175;
+      const stepBoxWidth = width - 140;
+      const stepBoxHeight = 360;
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath();
+      drawRoundRect(ctx, 70, stepBoxY, stepBoxWidth, stepBoxHeight, 28);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.stroke();
+
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#0F172A";
+      ctx.font = "bold 34px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+      ctx.fillText("সহজ ৩ ধাপে সিরিয়াল নেওয়ার নিয়ম:", 120, stepBoxY + 54);
+
       const steps = [
-        { num: "১", title: "স্ক্যান করুন", sub: "ক্যামেরা ওপেন করে" },
-        { num: "২", title: "টোকেন নিন", sub: "নাম ও সেবা বেছে" },
-        { num: "৩", title: "সিরিয়াল ট্র্যাক", sub: "লাইভ নোটিফিকেশন" },
+        `১. ফোনের ক্যামেরা দিয়ে QR কোডটি স্ক্যান করুন (বা amarsalon.xyz/${salonCode} এ যান)`,
+        "২. 'প্রিয় সেলুন' (My Saloons)-এ যুক্ত করুন দ্রুত সিরিয়াল পাওয়ার জন্য",
+        "৩. ঘরে বসেই চেয়ার খালি আছে কিনা দেখুন ও সিরিয়াল নিন",
       ];
 
-      const stepSpacing = width / 3;
       steps.forEach((st, idx) => {
-        const stepCenterX = stepSpacing * idx + stepSpacing / 2;
-
+        const lineY = stepBoxY + 122 + idx * 75;
+        // Step number circle (larger radius 22px)
+        ctx.fillStyle = "#0D9488";
         ctx.beginPath();
-        ctx.arc(stepCenterX, stepY, 36, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+        ctx.arc(142, lineY - 10, 22, 0, Math.PI * 2);
         ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-        ctx.stroke();
 
-        ctx.font = "bold 32px 'Hind Siliguri', sans-serif";
         ctx.fillStyle = "#FFFFFF";
-        ctx.fillText(st.num, stepCenterX, stepY + 2);
+        ctx.font = "bold 22px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(String(idx + 1), 142, lineY - 3);
 
-        ctx.font = "bold 28px 'Hind Siliguri', sans-serif";
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillText(st.title, stepCenterX, stepY + 70);
-
-        ctx.font = "normal 22px 'Hind Siliguri', sans-serif";
-        ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
-        ctx.fillText(st.sub, stepCenterX, stepY + 104);
+        // Step text: Increased to 30px bold Bengali typography
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#1E293B";
+        ctx.font = "600 30px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+        ctx.fillText(st.slice(3), 178, lineY);
       });
 
-      // 8. Footer Bar: Help info & Website URL
-      const footerY = height - 120;
-      ctx.font = "bold 30px 'Inter', sans-serif";
-      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
-      ctx.fillText("www.amarsalon.com", width / 2, footerY);
+      // 7. Footer: Zero extra space, balanced bottom padding, AmarSalon branding, logo & app download message
+      const footerDividerY = stepBoxY + stepBoxHeight + 40;
+      ctx.beginPath();
+      ctx.moveTo(70, footerDividerY);
+      ctx.lineTo(width - 70, footerDividerY);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
-      ctx.font = "normal 22px 'Hind Siliguri', sans-serif";
-      ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
-      ctx.fillText("স্মার্ট সেলুন ম্যানেজমেন্ট প্ল্যাটফর্ম", width / 2, footerY + 40);
+      // Salon Logo Emblem & Brand Text
+      const brandY = footerDividerY + 65;
+      drawSalonLogo(ctx, width / 2 - 240, brandY, 34);
 
-      // Download triggered via blob
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        const cleanName = (salon?.nameEn || salon?.nameBn || "amarsalon").replace(/[^a-zA-Z0-9]/g, "-").toLowerCase();
-        a.download = `${cleanName}-poster.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, "image/png");
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 50px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+      ctx.fillText("AmarSalon • আমার সেলুন", width / 2 - 185, brandY + 6);
+
+      // App Download Message
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#FDE047";
+      ctx.font = "bold 30px 'Hind Siliguri', 'Noto Sans Bengali', sans-serif";
+      ctx.fillText("📱 সহজ ও দ্রুত সিরিয়ালের জন্য আমাদের অ্যাপটি ইন্সটল করুন", width / 2, brandY + 76);
+
+      // Official URL
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 36px monospace";
+      ctx.fillText("amarsalon.xyz", width / 2, brandY + 130);
+
+      // Full Binary Blob download (prevents URL truncation on large images)
+      const filename = `amarsalon-poster-${salonCode}.png`;
+
+      await new Promise<void>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error("Canvas blob generation failed"));
+            return;
+          }
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.download = filename;
+          link.href = blobUrl;
+          link.style.display = "none";
+          document.body.appendChild(link);
+          link.click();
+
+          setTimeout(() => {
+            try {
+              document.body.removeChild(link);
+              URL.revokeObjectURL(blobUrl);
+            } catch (e) { }
+          }, 60000);
+          resolve();
+        }, "image/png");
+      });
     } catch (err) {
-      console.error("Poster generation error:", err);
-      alert(lang === "bn" ? "পোস্টার জেনারেট করতে সমস্যা হয়েছে।" : "Failed to generate poster.");
+      console.error("Poster generation failed:", err);
+      alert(lang === "bn" ? "পোস্টার ডাউনলোড করতে সমস্যা হয়েছে।" : "Failed to generate poster.");
     } finally {
       setDownloadingPoster(false);
     }
   };
 
-  const handleShareLink = () => {
-    if (!qrTargetUrl) return;
-    if (navigator.share) {
+  const handlePrint = () => {
+    triggerHaptic(25);
+    window.print();
+  };
+
+  const handleShare = async () => {
+    if (navigator.share && qrTargetUrl) {
       try {
-        navigator.share({
+        await navigator.share({
           title: salon?.nameBn || salon?.nameEn || "AmarSalon",
-          text: `${salon?.nameBn || salon?.nameEn || (lang === "bn" ? "আমাদের সেলুন" : "Our Salon")} এ সিরিয়াল দিন:`,
+          text: "আমার সেলুনে ঘরে বসেই সিরিয়াল নিন বা লাইভ চেয়ারের অবস্থা দেখুন:",
           url: qrTargetUrl,
         });
       } catch (e) { }
@@ -641,85 +659,125 @@ function OwnerProfileContent() {
           </button>
         </div>
 
-        {/* TAB 1: QR POSTER */}
+        {/* TAB 1: PRINTABLE QR POSTER ENGINE */}
         {activeTab === "qr" && (
           <div className="space-y-4">
-            <div className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-xs text-center">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-white mb-1">
-                {salon?.nameBn || salon?.nameEn || (lang === "bn" ? "আমাদের সেলুন" : "Our Salon")} - QR কোড
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                গ্রাহকরা এই QR স্ক্যান করে সরাসরি সিরিয়াল বুক করতে পারবেন
-              </p>
+            <div className="no-print">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">{t.qrPosterTitle}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t.qrPosterSub}</p>
+            </div>
 
-              {loading ? (
-                <div className="w-48 h-48 mx-auto bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center animate-pulse">
-                  <span className="text-xs text-slate-400">{t.loading}</span>
+            {/* Printable Standard Poster Container (Signature Teal & Amber Design) */}
+            <div className="bg-[#0D9488] text-white rounded-3xl p-6 border-2 border-white/40 shadow-xl text-center a4-page relative overflow-hidden flex flex-col justify-between">
+              {/* Top Header */}
+              <div className="border-b border-white/20 pb-4 mb-3 text-center">
+                <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight">
+                  অনলাইনে সিরিয়াল দিতে স্ক্যান করুন
+                </h1>
+                <p className="text-xs sm:text-sm font-bold text-amber-300 tracking-wider uppercase mt-1">
+                  SCAN WITH PHONE CAMERA TO BOOK ONLINE
+                </p>
+              </div>
+
+              {/* Central Hero QR Code Zone */}
+              <div className="my-3">
+                <div className="inline-block p-4 bg-white rounded-2xl shadow-md">
+                  {qrDataUrl ? (
+                    <img
+                      src={qrDataUrl}
+                      alt="Salon QR Code"
+                      className="w-56 h-56 mx-auto object-contain"
+                    />
+                  ) : (
+                    <div className="w-56 h-56 bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+                      QR কোড তৈরি হচ্ছে...
+                    </div>
+                  )}
                 </div>
-              ) : qrDataUrl ? (
-                <div className="inline-block p-4 bg-white rounded-3xl border-2 border-teal-500/30 shadow-md">
-                  <img
-                    src={qrDataUrl}
-                    alt="Salon QR Code"
-                    className="w-52 h-52 object-contain rounded-xl"
-                  />
-                  <div className="mt-3 flex items-center justify-center gap-1 text-[11px] font-mono font-bold text-teal-800 bg-teal-50 py-1 px-3 rounded-full">
-                    <span>কোড: {salon?.customCode || salon?.code || (salon?.id ? salon.id.slice(0, 6).toUpperCase() : "1051")}</span>
+                <div className="mt-3 text-center space-y-1.5">
+                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-900 text-white font-mono font-bold text-xs shadow-xs">
+                    <span>{lang === "bn" ? "সেলুন কোড / ID" : "Salon ID"}:</span>
+                    <span className="text-amber-300">#{salon?.customCode || salon?.code || (salon?.id ? salon.id.slice(0, 6).toUpperCase() : "1051")}</span>
                   </div>
+                  <p className="text-base sm:text-lg font-mono font-black text-amber-300 drop-shadow-xs">
+                    amarsalon.xyz/{salon?.customCode || salon?.code || (salon?.id ? salon.id.slice(0, 6).toUpperCase() : "1051")}
+                  </p>
                 </div>
-              ) : (
-                <p className="text-xs text-rose-500">QR কোড লোড করা যায়নি</p>
-              )}
+              </div>
 
-              {/* Action Buttons */}
-              <div className="mt-5 grid grid-cols-2 gap-2 max-w-xs mx-auto">
+              {/* 3 Steps Visual Guide */}
+              <div className="bg-white rounded-2xl p-5 border border-teal-100 text-left my-3 space-y-3 text-slate-800 shadow-sm">
+                <p className="font-extrabold text-slate-900 text-sm sm:text-base mb-1">
+                  সহজ ৩ ধাপে সিরিয়াল নেওয়ার নিয়ম:
+                </p>
+                <p className="text-slate-800 font-medium text-xs sm:text-sm flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-bold text-xs shrink-0">১</span>
+                  <span>ফোনের ক্যামেরা দিয়ে QR কোডটি স্ক্যান করুন (বা amarsalon.xyz/{salon?.customCode || salon?.code || "1051"} এ যান)</span>
+                </p>
+                <p className="text-slate-800 font-medium text-xs sm:text-sm flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-bold text-xs shrink-0">২</span>
+                  <span>&apos;প্রিয় সেলুন&apos; (My Saloons)-এ যুক্ত করুন দ্রুত সিরিয়াল পাওয়ার জন্য</span>
+                </p>
+                <p className="text-slate-800 font-medium text-xs sm:text-sm flex items-center gap-3">
+                  <span className="w-6 h-6 rounded-full bg-[#0D9488] text-white flex items-center justify-center font-bold text-xs shrink-0">৩</span>
+                  <span>ঘরে বসেই চেয়ার খালি আছে কিনা দেখুন ও সিরিয়াল নিন</span>
+                </p>
+              </div>
+
+              {/* Footer Band with AmarSalon Branding, Icon & App Download Notice */}
+              <div className="pt-3 border-t border-white/20 text-center space-y-1.5">
+                <div className="inline-flex items-center justify-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-300 text-teal-950 flex items-center justify-center shadow-xs">
+                    <Scissors className="w-4.5 h-4.5" />
+                  </div>
+                  <p className="font-black text-lg sm:text-xl text-white tracking-wide">
+                    AmarSalon <span className="text-amber-300 font-bold">•</span> আমার সেলুন
+                  </p>
+                </div>
+                <p className="text-xs sm:text-sm text-amber-200 font-semibold">
+                  📱 সহজ ও দ্রুত সিরিয়ালের জন্য আমাদের অ্যাপটি ইন্সটল করুন
+                </p>
+                <p className="text-xs font-mono font-bold text-white/90">
+                  amarsalon.xyz
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 no-print">
+              <button
+                type="button"
+                onClick={handleDownloadPoster}
+                disabled={downloadingPoster || !qrDataUrl}
+                className="w-full flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-teal-800 hover:bg-teal-900 active:scale-95 text-white font-bold text-sm shadow-md transition cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-5 h-5 shrink-0" />
+                <span>
+                  {downloadingPoster
+                    ? (lang === "bn" ? "পোস্টার তৈরি হচ্ছে..." : "Generating Poster...")
+                    : (lang === "bn" ? "পোস্টার ডাউনলোড করুন" : "Download Poster")}
+                </span>
+              </button>
+
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
-                  onClick={handleDownloadPoster}
-                  disabled={downloadingPoster || !qrDataUrl}
-                  className="w-full py-2.5 px-3 rounded-xl bg-teal-800 hover:bg-teal-900 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition cursor-pointer disabled:opacity-50"
+                  type="button"
+                  onClick={handlePrint}
+                  className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-xs transition cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>{downloadingPoster ? "জেনারেট হচ্ছে..." : "পোস্টার ডাউনলোড"}</span>
+                  <Printer className="w-4 h-4 text-teal-700 dark:text-teal-400" />
+                  <span>{lang === "bn" ? "প্রিন্ট প্রিভিউ" : "Print Preview"}</span>
                 </button>
 
                 <button
-                  onClick={handleShareLink}
-                  className="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-600 transition cursor-pointer"
+                  type="button"
+                  onClick={handleShare}
+                  className="flex items-center justify-center gap-2 p-3 rounded-2xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-xs transition cursor-pointer"
                 >
-                  <Share2 className="w-3.5 h-3.5" />
+                  <Share2 className="w-4 h-4 text-teal-700 dark:text-teal-400" />
                   <span>{t.sharePoster}</span>
                 </button>
               </div>
-
-              {/* Target Link Preview */}
-              {qrTargetUrl && (
-                <div className="mt-4 p-2.5 bg-slate-50 dark:bg-slate-700/50 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between text-left text-xs max-w-sm mx-auto">
-                  <span className="font-mono text-slate-600 dark:text-slate-300 truncate text-[11px] mr-2">
-                    {qrTargetUrl}
-                  </span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(qrTargetUrl);
-                      alert(lang === "bn" ? "লিংক কপি হয়েছে!" : "Link copied!");
-                    }}
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded text-slate-500 cursor-pointer"
-                    title="Copy Link"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Print & Display Instructions */}
-            <div className="bg-teal-50/60 dark:bg-teal-950/20 p-4 rounded-3xl border border-teal-200/60 dark:border-teal-900/40 text-xs text-teal-900 dark:text-teal-200 space-y-1.5">
-              <h4 className="font-bold flex items-center gap-1.5">
-                <Printer className="w-4 h-4 text-teal-700" />
-                <span>প্রিন্ট ও প্রদর্শনের পরামর্শ</span>
-              </h4>
-              <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
-                ডাউনলোড করা পোস্টারটি (Half-Letter 8.5" x 5.5") রঙিন প্রিন্ট করে সেলুনের প্রবেশদ্বারে বা ক্যাশ কাউন্টারে টাঙিয়ে রাখুন। গ্রাহকরা ক্যামেরা দিয়ে স্ক্যান করলেই সরাসরি সিরিয়াল কার্ড দেখতে পাবেন।
-              </p>
             </div>
           </div>
         )}
