@@ -372,7 +372,7 @@ export default function HomePageClient({
           Array.from({ length: 3 }).map((_, idx) => (
             <div key={idx} className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700 shadow-xs animate-pulse">
               <div className="flex gap-3">
-                <div className="w-20 h-20 rounded-xl bg-slate-200 dark:bg-slate-700 shrink-0" />
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl bg-slate-200 dark:bg-slate-700 shrink-0" />
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded-md w-3/4" />
                   <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded-md w-1/2" />
@@ -412,7 +412,7 @@ export default function HomePageClient({
               >
                 <div className="flex gap-3">
                   {/* Thumbnail */}
-                  <Link href={`/s/${salon.slug}`} className="relative w-22 h-22 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0">
+                  <Link href={`/s/${salon.slug}`} className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0 shadow-xs">
                     <img
                       src={
                         salon.coverImage ||
