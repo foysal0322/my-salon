@@ -20,7 +20,6 @@ import {
   RotateCcw,
   Store,
   Users,
-  Ticket,
 } from "lucide-react";
 
 export default function HomePageClient({
@@ -291,11 +290,12 @@ export default function HomePageClient({
                 : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                 }`}
             >
-              {zeroQueueFilter ? (
-                <Check className="w-3 h-3" />
-              ) : (
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
-              )}
+              {
+                zeroQueueFilter ? (
+                  <Check className="w-3 h-3" />
+                ) : (
+                  <Zap className="w-3.5 h-3.5 text-amber-500" />
+                )}
               <span>{lang === "bn" ? "সিরিয়াল খালি (০ অপেক্ষমাণ)" : "No Waiting (0 in queue)"}</span>
             </button>
 
@@ -425,12 +425,6 @@ export default function HomePageClient({
                         (e.target as HTMLImageElement).src = "/images/salon-placeholder.svg";
                       }}
                     />
-                    {salon.isAc && (
-                      <span className="absolute top-1 left-1 text-[9px] font-bold bg-teal-900/85 backdrop-blur-xs text-white px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                        <Wind className="w-2.5 h-2.5" />
-                        AC
-                      </span>
-                    )}
                   </Link>
 
                   {/* Info */}
@@ -466,81 +460,84 @@ export default function HomePageClient({
                       </div>
                     </div>
 
-                    {/* Live Queue & Serial Status */}
-                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                      {salon.totalQueue === 0 ? (
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>
-                            {lang === "bn" ? "সিরিয়াল খালি (০ জন অপেক্ষায়)" : "0 in Queue (Walk-in Ready)"}
+                    {/* Live Queue Status */}
+                      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                        {salon.totalQueue === 0 ? (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>
+                              {lang === "bn" ? "সিরিয়াল খালি (০ জন অপেক্ষায়)" : "0 in Queue (Walk-in Ready)"}
+                            </span>
                           </span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-2xs">
-                          <Users className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span>
-                            {lang === "bn"
-                              ? `সিরিয়ালে ${salon.totalQueue} জন অপেক্ষায়`
-                              : `${salon.totalQueue} people in queue`}
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-2xs">
+                            <Users className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span>
+                              {lang === "bn"
+                                ? `সিরিয়ালে ${salon.totalQueue} জন অপেক্ষায়`
+                                : `${salon.totalQueue} people in queue`}
+                            </span>
                           </span>
-                        </span>
-                      )}
+                        )}
 
                       {salon.totalQueue > 0 && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300">
-                          <Clock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                          <span>~{salon.estWaitMins} {t.minutes}</span>
-                        </span>
-                      )}
-
-                      {salon.currentServingToken > 0 && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200/80 dark:border-teal-800">
-                          <Ticket className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-                          <span>
-                            {lang === "bn" ? `চলতি #${salon.currentServingToken}` : `Serving #${salon.currentServingToken}`}
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300">
+                            <Clock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                            <span>~{salon.estWaitMins} {t.minutes}</span>
                           </span>
-                        </span>
-                      )}
-
-                      {salon.acceptsDigitalPayment !== false && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300">
-                          <CreditCard className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400" />
-                          <span>{lang === "bn" ? "ডিজিটাল পে" : "Digital Pay"}</span>
-                        </span>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* CTA */}
-                <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-end">
-                  {isOwner ? (
-                    activeSalonId === salon.id || (user?.id && (salon as any).ownerId === user.id) ? (
-                      <Link
-                        href="/owner/dashboard"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold bg-teal-700 hover:bg-teal-800 active:scale-95 text-white px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
-                      >
-                        <Store className="w-3.5 h-3.5" />
-                        <span>{lang === "bn" ? "ম্যানেজ সেলুন" : "Manage Salon"}</span>
-                      </Link>
+                {/* Bottom Row: Facility Tags (Left) & CTA Button (Right) */}
+                <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between gap-2">
+                  {/* Left side: AC and Digital Pay tags with 80% opacity */}
+                  <div className="flex items-center gap-1.5 flex-wrap min-w-0 opacity-80">
+                    {salon.isAc && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200/80 dark:border-teal-800">
+                        <Wind className="w-2.5 h-2.5 text-teal-600 dark:text-teal-400" />
+                        <span>AC</span>
+                      </span>
+                    )}
+                    {salon.acceptsDigitalPayment !== false && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800">
+                        <CreditCard className="w-2.5 h-2.5 text-indigo-500 dark:text-indigo-400" />
+                        <span>{lang === "bn" ? "ডিজিটাল পে" : "Digital Pay"}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Right side: Action CTA */}
+                  <div className="shrink-0">
+                    {isOwner ? (
+                      activeSalonId === salon.id || (user?.id && (salon as any).ownerId === user.id) ? (
+                        <Link
+                          href="/owner/dashboard"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold bg-teal-700 hover:bg-teal-800 active:scale-95 text-white px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+                        >
+                          <Store className="w-3.5 h-3.5" />
+                          <span>{lang === "bn" ? "ম্যানেজ সেলুন" : "Manage Salon"}</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/s/${salon.slug}`}
+                          className="inline-flex items-center gap-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+                        >
+                          <span>{lang === "bn" ? "বিস্তারিত দেখুন" : "View Details"}</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      )
                     ) : (
                       <Link
                         href={`/s/${salon.slug}`}
-                        className="inline-flex items-center gap-1 text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+                        className="inline-flex items-center gap-1 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
                       >
-                        <span>{lang === "bn" ? "বিস্তারিত দেখুন" : "View Details"}</span>
+                        <span>{t.joinLiveQueue}</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
-                    )
-                  ) : (
-                    <Link
-                      href={`/s/${salon.slug}`}
-                      className="inline-flex items-center gap-1 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-3 py-1.5 rounded-xl shadow-xs transition shrink-0 cursor-pointer"
-                    >
-                      <span>{t.joinLiveQueue}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             );
