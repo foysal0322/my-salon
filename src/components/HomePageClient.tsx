@@ -10,7 +10,6 @@ import {
   MapPin,
   Heart,
   Wind,
-  Armchair,
   Clock,
   ChevronRight,
   Navigation,
@@ -20,6 +19,8 @@ import {
   SlidersHorizontal,
   RotateCcw,
   Store,
+  Users,
+  Ticket,
 } from "lucide-react";
 
 export default function HomePageClient({
@@ -36,7 +37,6 @@ export default function HomePageClient({
   // Multi-select filters
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isAcFilter, setIsAcFilter] = useState<boolean>(false);
-  const [freeChairsFilter, setFreeChairsFilter] = useState<boolean>(false);
   const [digitalPayFilter, setDigitalPayFilter] = useState<boolean>(false);
   const [zeroQueueFilter, setZeroQueueFilter] = useState<boolean>(false);
 
@@ -79,7 +79,6 @@ export default function HomePageClient({
     triggerHaptic(30);
     setSelectedCategories([]);
     setIsAcFilter(false);
-    setFreeChairsFilter(false);
     setDigitalPayFilter(false);
     setZeroQueueFilter(false);
     setSearchQuery("");
@@ -88,7 +87,6 @@ export default function HomePageClient({
   const activeFilterCount =
     selectedCategories.length +
     (isAcFilter ? 1 : 0) +
-    (freeChairsFilter ? 1 : 0) +
     (digitalPayFilter ? 1 : 0) +
     (zeroQueueFilter ? 1 : 0);
 
@@ -100,7 +98,6 @@ export default function HomePageClient({
         params.append("category", selectedCategories.join(","));
       }
       if (isAcFilter) params.append("isAc", "true");
-      if (freeChairsFilter) params.append("freeChairs", "true");
       if (digitalPayFilter) params.append("digitalPayment", "true");
       if (zeroQueueFilter) params.append("zeroQueue", "true");
       if (searchQuery.trim()) params.append("search", searchQuery.trim());
@@ -139,7 +136,6 @@ export default function HomePageClient({
   }, [
     selectedCategories,
     isAcFilter,
-    freeChairsFilter,
     digitalPayFilter,
     zeroQueueFilter,
     searchQuery,
@@ -161,7 +157,7 @@ export default function HomePageClient({
               {lang === "bn" ? "কাছের সেলুন খুঁজুন" : "Find Salons Near You"}
             </h2>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate whitespace-nowrap">
-              {lang === "bn" ? "চেয়ারের অবস্থা দেখে লাইভ সিরিয়াল নিন" : "Real-time chairs & online tokens"}
+              {lang === "bn" ? "লাইভ সিরিয়াল ও অপেক্ষমাণ মানুষের সংখ্যা দেখে বুকিং নিন" : "Real-time serials & live queue count"}
             </p>
           </div>
 
@@ -283,24 +279,24 @@ export default function HomePageClient({
 
           {/* Row 2: Feature Toggles (Multi-select) */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-xs">
-            {/* Free Chairs Toggle */}
+            {/* Zero Queue Toggle */}
             <button
               type="button"
               onClick={() => {
                 triggerHaptic(20);
-                setFreeChairsFilter(!freeChairsFilter);
+                setZeroQueueFilter(!zeroQueueFilter);
               }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${freeChairsFilter
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${zeroQueueFilter
                 ? "bg-emerald-600 text-white shadow-xs border border-emerald-600"
                 : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
                 }`}
             >
-              {freeChairsFilter ? (
+              {zeroQueueFilter ? (
                 <Check className="w-3 h-3" />
               ) : (
-                <Armchair className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
               )}
-              <span>{t.freeChairsNow}</span>
+              <span>{lang === "bn" ? "সিরিয়াল খালি (০ অপেক্ষমাণ)" : "No Waiting (0 in queue)"}</span>
             </button>
 
             {/* AC Toggle */}
@@ -321,26 +317,6 @@ export default function HomePageClient({
                 <Wind className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
               )}
               <span>{t.acOnly}</span>
-            </button>
-
-            {/* Zero Queue Toggle */}
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic(20);
-                setZeroQueueFilter(!zeroQueueFilter);
-              }}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full font-bold shrink-0 transition cursor-pointer active:scale-95 ${zeroQueueFilter
-                ? "bg-amber-600 text-white shadow-xs border border-amber-600"
-                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-                }`}
-            >
-              {zeroQueueFilter ? (
-                <Check className="w-3 h-3" />
-              ) : (
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
-              )}
-              <span>{lang === "bn" ? "০ অপেক্ষমাণ (কোন সিরিয়াল নেই)" : "No Waiting"}</span>
             </button>
 
             {/* Digital Payment Toggle */}
@@ -379,7 +355,7 @@ export default function HomePageClient({
                   {lang === "bn" ? "আপনি সেলুন মালিক হিসেবে লগইন আছেন" : "Logged in as Salon Owner"}
                 </p>
                 <p className="text-[10px] text-teal-700 dark:text-teal-400 truncate">
-                  {lang === "bn" ? "লাইভ চেয়ার ও কিউ পরিচালনা করতে মালিক প্যানেলে যান" : "Manage chairs and queues in Owner Console"}
+                  {lang === "bn" ? "লাইভ সিরিয়াল ও কিউ পরিচালনা করতে মালিক প্যানেলে যান" : "Manage live queue in Owner Console"}
                 </p>
               </div>
             </div>
@@ -428,7 +404,6 @@ export default function HomePageClient({
           // Salon Cards
           saloons.map((salon) => {
             const isFav = favorites.includes(salon.id);
-            const hasFreeChairs = salon.freeChairs > 0;
 
             return (
               <div
@@ -491,32 +466,39 @@ export default function HomePageClient({
                       </div>
                     </div>
 
-                    {/* Live Chair Status Pill & Wait Time */}
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      {hasFreeChairs ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {/* Live Queue & Serial Status */}
+                    <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                      {salon.totalQueue === 0 ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                           <span>
-                            {salon.freeChairs} {t.chairsAvailable}
+                            {lang === "bn" ? "সিরিয়াল খালি (০ জন অপেক্ষায়)" : "0 in Queue (Walk-in Ready)"}
                           </span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                          <span>{t.allChairsBusy}</span>
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 shadow-2xs">
+                          <Users className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span>
+                            {lang === "bn"
+                              ? `সিরিয়ালে ${salon.totalQueue} জন অপেক্ষায়`
+                              : `${salon.totalQueue} people in queue`}
+                          </span>
                         </span>
                       )}
 
-                      {salon.totalQueue > 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                          <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                          <span>
-                            {salon.totalQueue} {t.queueWaiting} (~{salon.estWaitMins} {t.minutes})
-                          </span>
+                      {salon.totalQueue > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300">
+                          <Clock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                          <span>~{salon.estWaitMins} {t.minutes}</span>
                         </span>
-                      ) : (
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                          {lang === "bn" ? "কোন ওয়েটিং নেই" : "No queue"}
+                      )}
+
+                      {salon.currentServingToken > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 border border-teal-200/80 dark:border-teal-800">
+                          <Ticket className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+                          <span>
+                            {lang === "bn" ? `চলতি #${salon.currentServingToken}` : `Serving #${salon.currentServingToken}`}
+                          </span>
                         </span>
                       )}
 

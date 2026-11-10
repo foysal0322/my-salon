@@ -10,7 +10,6 @@ import {
   Phone,
   Heart,
   Wind,
-  Armchair,
   Clock,
   CheckCircle2,
   Share2,
@@ -337,14 +336,14 @@ export default function SalonProfilePage() {
         </div>
       </div>
 
-      {/* Live Floor & Queue Status Board */}
+      {/* Live Queue & Serial Status Board */}
       <section className="px-4 py-3">
         <div className="bg-gradient-to-br from-teal-900 to-[#115E59] text-white rounded-3xl p-4 shadow-md relative overflow-hidden">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-teal-200">
-                {t.liveChairStatus}
+                {lang === "bn" ? "লাইভ সিরিয়াল ও কিউ অবস্থা" : "Live Queue & Serial Status"}
               </h2>
             </div>
             <span className="text-[10px] text-teal-300 font-medium">
@@ -353,15 +352,19 @@ export default function SalonProfilePage() {
           </div>
 
           {/* Metric Columns */}
-          <div className="grid grid-cols-3 gap-2 text-center py-1 bg-white/10 rounded-2xl backdrop-blur-xs mb-3 border border-white/10">
-            {/* Total Chairs */}
+          <div className="grid grid-cols-3 gap-2 text-center py-2 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10">
+            {/* Total Waiting in Queue */}
             <div className="p-2 border-r border-white/10">
-              <p className="text-[10px] text-teal-200 font-medium">{t.chairs}</p>
+              <p className="text-[10px] text-teal-200 font-medium">
+                {lang === "bn" ? "সিরিয়ালে অপেক্ষমাণ" : "Waiting in Queue"}
+              </p>
               <p className="text-lg font-bold text-white leading-none mt-0.5">
-                {salon.totalChairs - salon.busyChairs}/{salon.totalChairs}
+                {salon.totalQueue}
               </p>
               <p className="text-[9px] text-emerald-300 font-medium mt-0.5">
-                {salon.freeChairs > 0 ? (lang === "bn" ? "খালি আছে" : "Available") : (lang === "bn" ? "ব্যস্ত" : "Busy")}
+                {salon.totalQueue === 0
+                  ? lang === "bn" ? "সিরিয়াল নেই" : "No wait"
+                  : lang === "bn" ? "জন অপেক্ষায়" : "people"}
               </p>
             </div>
 
@@ -372,7 +375,7 @@ export default function SalonProfilePage() {
                 #{String(salon.currentServingToken || 0).padStart(3, "0")}
               </p>
               <p className="text-[9px] text-teal-300 font-medium mt-0.5">
-                {lang === "bn" ? "চলমান" : "In Chair"}
+                {lang === "bn" ? "চলতি সিরিয়াল" : "In Service"}
               </p>
             </div>
 
@@ -383,35 +386,6 @@ export default function SalonProfilePage() {
                 ~{salon.estWaitMins}
               </p>
               <p className="text-[9px] text-teal-300 font-medium mt-0.5">{t.minutes}</p>
-            </div>
-          </div>
-
-          {/* Interactive Chair State Grid */}
-          <div>
-            <p className="text-[11px] font-semibold text-teal-200 mb-1.5 flex items-center gap-1">
-              <Armchair className="w-3.5 h-3.5" />
-              <span>{lang === "bn" ? "চেয়ারের অবস্থা:" : "Chairs Layout:"}</span>
-            </p>
-            <div className="grid grid-cols-4 gap-2">
-              {salon.chairStates.map((chair) => (
-                <div
-                  key={chair.chairNo}
-                  className={`p-2 rounded-xl text-center border transition-all ${chair.isBusy
-                    ? "bg-rose-500/20 border-rose-400/40 text-rose-200"
-                    : "bg-emerald-500/25 border-emerald-400/50 text-emerald-100 shadow-xs"
-                    }`}
-                >
-                  <p className="text-[10px] font-bold">
-                    {lang === "bn" ? `চেয়ার ${chair.chairNo}` : `Chair ${chair.chairNo}`}
-                  </p>
-                  <span
-                    className={`inline-block mt-0.5 text-[9px] font-bold px-1.5 py-0.2 rounded-md ${chair.isBusy ? "bg-rose-500/80 text-white" : "bg-emerald-500 text-slate-950"
-                      }`}
-                  >
-                    {chair.isBusy ? (lang === "bn" ? "ব্যস্ত" : "Busy") : (lang === "bn" ? "খালি" : "Free")}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         </div>

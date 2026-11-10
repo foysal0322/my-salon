@@ -265,7 +265,7 @@ export default function MorePage() {
                     {lang === "bn" ? "সেলুন মালিকের ড্যাশবোর্ড" : "Salon Owner Dashboard"}
                   </span>
                   <span className="text-[11px] text-teal-600 dark:text-teal-400 block">
-                    {lang === "bn" ? "সিরিয়াল ও চেয়ার কন্ট্রোল প্যানেল" : "Live queue & chair control"}
+                    {lang === "bn" ? "সিরিয়াল ও কিউ কন্ট্রোল প্যানেল" : "Live queue & serial controller"}
                   </span>
                 </div>
               </div>

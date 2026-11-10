@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { useApp } from "@/context/AppContext";
 import {
-  Armchair,
   Users,
   Plus,
   Minus,
@@ -61,31 +60,7 @@ export default function OwnerDashboardPage() {
         const current =
           data.saloons.find((s: any) => s.id === activeSalonId) || data.saloons[0];
 
-        // Safely parse chairStates into Array format
-        let parsedChairs: Array<{ chairNo: number; isBusy: boolean }> = [];
-        try {
-          parsedChairs =
-            typeof current.chairStates === "string"
-              ? JSON.parse(current.chairStates)
-              : current.chairStates || [];
-        } catch (e) {
-          parsedChairs = [];
-        }
-
-        if (!Array.isArray(parsedChairs) || parsedChairs.length === 0) {
-          parsedChairs = Array.from(
-            { length: current.totalChairs || 3 },
-            (_, i) => ({
-              chairNo: i + 1,
-              isBusy: false,
-            })
-          );
-        }
-
-        setSalon({
-          ...current,
-          chairStates: parsedChairs,
-        });
+        setSalon(current);
 
         if (current.id !== activeSalonId) {
           setActiveSalonId(current.id);
@@ -149,60 +124,6 @@ export default function OwnerDashboardPage() {
     const interval = setInterval(fetchDashboardData, 4000);
     return () => clearInterval(interval);
   }, [activeSalonId, user]);
-
-  // TOGGLE CHAIR
-  const handleToggleChair = async (chairNo: number) => {
-    if (!activeSalonId || !salon) return;
-    triggerHaptic(40);
-
-    // Optimistic instant UI update
-    const currentChairs: Array<{ chairNo: number; isBusy: boolean }> = Array.isArray(salon.chairStates)
-      ? salon.chairStates.map((c: any) => ({ ...c }))
-      : Array.from({ length: salon.totalChairs || 3 }, (_, i) => ({ chairNo: i + 1, isBusy: false }));
-
-    const targetIdx = currentChairs.findIndex((c) => c.chairNo === chairNo);
-    if (targetIdx !== -1) {
-      currentChairs[targetIdx].isBusy = !currentChairs[targetIdx].isBusy;
-    } else {
-      currentChairs.push({ chairNo, isBusy: true });
-    }
-
-    const busyCount = currentChairs.filter((c) => c.isBusy).length;
-    setSalon((prev: any) => ({
-      ...prev,
-      chairStates: currentChairs,
-      busyChairs: busyCount,
-      freeChairs: (prev?.totalChairs || currentChairs.length) - busyCount,
-    }));
-
-    try {
-      const res = await fetch(`/api/v1/owner/saloons/${activeSalonId}/state`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "TOGGLE_CHAIR", chairNo }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        let serverChairs = data.chairStates;
-        if (typeof serverChairs === "string") {
-          try {
-            serverChairs = JSON.parse(serverChairs);
-          } catch (e) { }
-        }
-        if (Array.isArray(serverChairs)) {
-          setSalon((prev: any) => ({
-            ...prev,
-            chairStates: serverChairs,
-            busyChairs: data.busyChairs,
-            freeChairs: (prev?.totalChairs || serverChairs.length) - data.busyChairs,
-          }));
-        }
-      }
-    } catch (e) {
-      console.error("Failed to toggle chair:", e);
-      fetchDashboardData();
-    }
-  };
 
   // ADJUST WALK-IN QUEUE (+1 / -1)
   const handleAdjustWalkIn = async (delta: number) => {
@@ -353,24 +274,6 @@ export default function OwnerDashboardPage() {
     }
   };
 
-  // Guaranteed resilient chair list computation (must be declared before early returns to obey Rules of Hooks)
-  const chairList = useMemo(() => {
-    if (!salon) return [];
-    if (Array.isArray(salon.chairStates) && salon.chairStates.length > 0) {
-      return salon.chairStates;
-    }
-    if (typeof salon.chairStates === "string") {
-      try {
-        const p = JSON.parse(salon.chairStates);
-        if (Array.isArray(p) && p.length > 0) return p;
-      } catch (e) { }
-    }
-    return Array.from({ length: salon.totalChairs || 3 }, (_, i) => ({
-      chairNo: i + 1,
-      isBusy: false,
-    }));
-  }, [salon?.chairStates, salon?.totalChairs]);
-
   if (!user) {
     return (
       <AppShell>
@@ -400,8 +303,8 @@ export default function OwnerDashboardPage() {
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
               {lang === "bn"
-                ? "আপনার সেলুন বা পার্লারের শাখা যুক্ত করে লাইভ সিরিয়াল ও চেয়ার বুকিং শুরু করুন। পাবেন ৩০ দিনের সম্পূর্ণ ফ্রি ট্রায়াল।"
-                : "Register your first salon branch to begin accepting live queue serials and managing chairs. Includes 30 days free trial."}
+                ? "আপনার সেলুন বা পার্লারের শাখা যুক্ত করে লাইভ সিরিয়াল পরিচালনা শুরু করুন। পাবেন ৩০ দিনের সম্পূর্ণ ফ্রি ট্রায়াল।"
+                : "Register your first salon branch to begin managing live queues and serials. Includes 30 days free trial."}
             </p>
           </div>
           <Link
@@ -468,8 +371,8 @@ export default function OwnerDashboardPage() {
             <h1 className="text-lg font-bold text-slate-900 dark:text-white">{t.navQueue}</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {lang === "bn"
-                ? "লাইভ সিরিয়াল ও চেয়ার কন্ট্রোল"
-                : "Live Floor & Queue Controller"}
+                ? "লাইভ সিরিয়াল ও কিউ কন্ট্রোল"
+                : "Live Serial & Queue Controller"}
             </p>
           </div>
 
@@ -576,7 +479,7 @@ export default function OwnerDashboardPage() {
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-200 bg-teal-200/70 dark:bg-teal-900/80 px-2 py-0.5 rounded-md flex items-center gap-1">
                   <Play className="w-3 h-3 fill-teal-800 dark:fill-teal-200" />
-                  <span>{lang === "bn" ? "বর্তমানে সেবা নিচ্ছেন" : "Currently In Chair"}</span>
+                  <span>{lang === "bn" ? "বর্তমানে সেবা নিচ্ছেন" : "Currently Serving"}</span>
                 </span>
                 <span className="font-mono font-black text-base text-teal-900 dark:text-teal-200">
                   #{String(inServiceBooking.tokenNumber).padStart(3, "0")}
@@ -696,7 +599,7 @@ export default function OwnerDashboardPage() {
                           }`}
                       >
                         <Play className="w-3.5 h-3.5 fill-white" />
-                        <span>{lang === "bn" ? "ডাকুন ও চেয়ারে বসান" : "Start Service"}</span>
+                        <span>{lang === "bn" ? "ডাকুন ও সার্ভিস শুরু করুন" : "Start Service"}</span>
                       </button>
 
                       <button
@@ -744,69 +647,6 @@ export default function OwnerDashboardPage() {
               </p>
             </div>
           ) : null}
-        </section>
-
-        {/* CHAIR GRID MATRIX (THE ONE-TAP CONSOLE) */}
-        <section className="bg-white dark:bg-slate-800/90 rounded-3xl p-4 border border-slate-200/80 dark:border-slate-700 shadow-xs">
-          <div className="flex items-center gap-1.5 mb-3">
-            <Armchair className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-              {t.chairMatrix}
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2.5">
-            {
-              chairList && chairList.length > 0 ? (
-                chairList.map((chair: any) => {
-                  const isBusy = chair.isBusy;
-                  return (
-                    <button
-                      key={chair.chairNo}
-                      type="button"
-                      onClick={() => handleToggleChair(chair.chairNo)}
-                      className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between min-h-[90px] active:scale-95 ${isBusy
-                        ? "bg-rose-50 dark:bg-rose-950/40 border-rose-400 dark:border-rose-800 text-rose-900 dark:text-rose-200 shadow-xs"
-                        : "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-400 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 shadow-xs"
-                        }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-sm font-extrabold">
-                          {lang === "bn" ? `চেয়ার #${chair.chairNo}` : `Chair #${chair.chairNo}`}
-                        </span>
-                        <span
-                          className={`w-3 h-3 rounded-full ${isBusy ? "bg-rose-500 animate-pulse" : "bg-emerald-500"
-                            }`}
-                        />
-                      </div>
-
-                      <div className="text-left mt-2">
-                        <span
-                          className={`inline-block text-xs font-bold px-2 py-0.5 rounded-lg ${isBusy
-                            ? "bg-rose-200 dark:bg-rose-900 text-rose-900 dark:text-rose-100"
-                            : "bg-emerald-200 dark:bg-emerald-900 text-emerald-950 dark:text-emerald-100"
-                            }`}
-                        >
-                          {isBusy ? t.chairBusy : t.chairFree}
-                        </span>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                          {isBusy
-                            ? lang === "bn"
-                              ? "ট্যাপ করে খালি করুন"
-                              : "Tap to free"
-                            : lang === "bn"
-                              ? "ট্যাপ করে ব্যস্ত করুন"
-                              : "Tap to book"}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })
-              ) : (
-                <p className="text-xs text-slate-400 col-span-2">{t.loading}</p>
-              )
-            }
-          </div>
         </section>
 
         {/* HYBRID WALK-IN COUNTER CONTROLLER */}
