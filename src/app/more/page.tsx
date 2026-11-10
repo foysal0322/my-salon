@@ -45,7 +45,7 @@ export default function MorePage() {
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {lang === "bn"
-            ? "অ্যাপ সেটিংস ও অন্যান্য সুবিধা"
+              ? "অ্যাপ সেটিংস ও অন্যান্য সুবিধা"
               : "App settings and preferences"}
           </p>
         </div>

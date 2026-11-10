@@ -303,7 +303,7 @@ export default function OwnerDashboardPage() {
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
               {lang === "bn"
-                ? "আপনার সেলুন বা পার্লারের শাখা যুক্ত করে লাইভ সিরিয়াল পরিচালনা শুরু করুন। পাবেন ৩০ দিনের সম্পূর্ণ ফ্রি ট্রায়াল।"
+              ? "আপনার সেলুন বা পার্লারের শাখা যুক্ত করে লাইভ সিরিয়াল পরিচালনা শুরু করুন। পাবেন ৩০ দিনের সম্পূর্ণ ফ্রি ট্রায়াল।"
                 : "Register your first salon branch to begin managing live queues and serials. Includes 30 days free trial."}
             </p>
           </div>
@@ -371,7 +371,7 @@ export default function OwnerDashboardPage() {
             <h1 className="text-lg font-bold text-slate-900 dark:text-white">{t.navQueue}</h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {lang === "bn"
-                ? "লাইভ সিরিয়াল ও কিউ কন্ট্রোল"
+              ? "লাইভ সিরিয়াল ও কিউ কন্ট্রোল"
                 : "Live Serial & Queue Controller"}
             </p>
           </div>
