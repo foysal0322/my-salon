@@ -10,6 +10,7 @@
     "tunnel": "node scripts/tunnel.mjs",
     "lint": "eslint",
     "test": "node --test tests/platform.test.mjs",
+    "db:push": "prisma db push",
     "seed": "node --experimental-strip-types prisma/seed.ts"
   },
   "prisma": {
