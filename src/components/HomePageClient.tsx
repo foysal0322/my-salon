@@ -412,55 +412,55 @@ export default function HomePageClient({
               >
                 <div className="flex gap-3">
                   {/* Thumbnail */}
-                  <Link href={`/s/${salon.slug}`} className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0 shadow-xs">
-                    <img
-                      src={
-                        salon.coverImage ||
-                        "/images/salon-placeholder.svg"
-                      }
-                      alt={salon.nameBn}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/salon-placeholder.svg";
-                      }}
-                    />
-                  </Link>
+                    <Link href={`/s/${salon.slug}`} className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0 shadow-xs">
+                      <img
+                        src={
+                          salon.coverImage ||
+                          "/images/salon-placeholder.svg"
+                        }
+                        alt={salon.nameBn}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/salon-placeholder.svg";
+                        }}
+                      />
+                    </Link>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-start justify-between gap-1">
-                        <Link href={`/s/${salon.slug}`} className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <h3 className="font-bold text-[15px] leading-snug text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition truncate">
-                              {lang === "bn" ? salon.nameBn : salon.nameEn}
-                            </h3>
-                          </div>
-                        </Link>
-                        {/* Favorite Button */}
-                        <button
-                          onClick={() => {
-                            triggerHaptic(25);
-                            toggleFavorite(salon.id);
-                          }}
-                          className={`p-1.5 rounded-full transition cursor-pointer shrink-0 ${isFav
-                            ? "text-rose-500 bg-rose-50 dark:bg-rose-950/60"
-                            : "text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400"
-                            }`}
-                          title="Save to My Saloons"
-                        >
-                          <Heart className={`w-4 h-4 ${isFav ? "fill-rose-500" : ""}`} />
-                        </button>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <Link href={`/s/${salon.slug}`} className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="font-bold text-[15px] leading-snug text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition truncate">
+                                {lang === "bn" ? salon.nameBn : salon.nameEn}
+                              </h3>
+                            </div>
+                          </Link>
+                          {/* Favorite Button */}
+                          <button
+                            onClick={() => {
+                              triggerHaptic(25);
+                              toggleFavorite(salon.id);
+                            }}
+                            className={`p-1.5 rounded-full transition cursor-pointer shrink-0 ${isFav
+                              ? "text-rose-500 bg-rose-50 dark:bg-rose-950/60"
+                              : "text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400"
+                              }`}
+                            title="Save to My Saloons"
+                          >
+                            <Heart className={`w-4 h-4 ${isFav ? "fill-rose-500" : ""}`} />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                          <span className="truncate">{salon.address}</span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
-                        <span className="truncate">{salon.address}</span>
-                      </div>
-                    </div>
-
-                    {/* Live Queue Status */}
+                      {/* Live Queue Status */}
                       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                         {salon.totalQueue === 0 ? (
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
@@ -480,7 +480,7 @@ export default function HomePageClient({
                           </span>
                         )}
 
-                      {salon.totalQueue > 0 && (
+                        {salon.totalQueue > 0 && (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-300">
                             <Clock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                             <span>~{salon.estWaitMins} {t.minutes}</span>
@@ -488,7 +488,7 @@ export default function HomePageClient({
                         )}
                       </div>
                     </div>
-                  </div>
+                </div>
 
                 {/* Bottom Row: Facility Tags (Left) & CTA Button (Right) */}
                 <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-700/80 flex items-center justify-between gap-2">
