@@ -23,8 +23,15 @@ export const metadata: Metadata = {
     "বাংলাদেশের সেরা সেলুন ও বিউটি পার্লার খুঁজুন, রিয়েল-টাইম চেয়ারের অবস্থা দেখুন এবং ঘরে বসেই লাইভ সিরিয়াল নিন।",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon-192x192.png",
-    apple: "/icons/icon-192x192.png",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
   },
   appleWebApp: {
     capable: true,
