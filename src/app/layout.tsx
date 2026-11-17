@@ -55,6 +55,11 @@ export default function RootLayout({
     >
       <head>
         <script
+          defer
+          src="https://plausible.nsuone.com/script.js"
+          data-website-id="a15b512f-5206-4a95-9593-3fafb8740fc5"
+        />
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
