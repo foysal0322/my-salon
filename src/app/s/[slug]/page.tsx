@@ -126,8 +126,8 @@ export default function SalonProfilePage() {
 
   useEffect(() => {
     fetchSalonDetails();
-    // Auto refresh live queue every 12 seconds
-    const interval = setInterval(fetchSalonDetails, 12000);
+    // Auto refresh live queue every 4 seconds for real-time queue synchronization
+    const interval = setInterval(fetchSalonDetails, 4000);
     return () => clearInterval(interval);
   }, [slug]);
 
@@ -352,43 +352,43 @@ export default function SalonProfilePage() {
           </div>
 
           {/* Metric Columns */}
-            <div className="grid grid-cols-3 gap-2 text-center py-2 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10">
-              {/* Total Waiting in Queue */}
-              <div className="p-2 border-r border-white/10">
-                <p className="text-[10px] text-teal-200 font-medium">
-                  {lang === "bn" ? "সিরিয়ালে অপেক্ষমাণ" : "Waiting in Queue"}
-                </p>
-                <p className="text-lg font-bold text-white leading-none mt-0.5">
-                  {salon.totalQueue}
-                </p>
-                <p className="text-[9px] text-emerald-300 font-medium mt-0.5">
-                  {salon.totalQueue === 0
-                    ? lang === "bn" ? "সিরিয়াল নেই" : "No wait"
-                    : lang === "bn" ? "জন অপেক্ষায়" : "people"}
-                </p>
-              </div>
+          <div className="grid grid-cols-3 gap-2 text-center py-2 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10">
+            {/* Total Waiting in Queue */}
+            <div className="p-2 border-r border-white/10">
+              <p className="text-[10px] text-teal-200 font-medium">
+                {lang === "bn" ? "সিরিয়ালে অপেক্ষমাণ" : "Waiting in Queue"}
+              </p>
+              <p className="text-lg font-bold text-white leading-none mt-0.5">
+                {salon.totalQueue}
+              </p>
+              <p className="text-[9px] text-emerald-300 font-medium mt-0.5">
+                {salon.totalQueue === 0
+                  ? lang === "bn" ? "সিরিয়াল নেই" : "No wait"
+                  : lang === "bn" ? "জন অপেক্ষায়" : "people"}
+              </p>
+            </div>
 
-              {/* Serving Token */}
-              <div className="p-2 border-r border-white/10">
-                <p className="text-[10px] text-teal-200 font-medium">{t.currentServing}</p>
-                <p className="text-lg font-bold text-amber-300 leading-none mt-0.5">
-                  #{String(salon.currentServingToken || 0).padStart(3, "0")}
-                </p>
-                <p className="text-[9px] text-teal-300 font-medium mt-0.5">
-                  {lang === "bn" ? "চলতি সিরিয়াল" : "In Service"}
-                </p>
-              </div>
+            {/* Serving Token */}
+            <div className="p-2 border-r border-white/10">
+              <p className="text-[10px] text-teal-200 font-medium">{t.currentServing}</p>
+              <p className="text-lg font-bold text-amber-300 leading-none mt-0.5">
+                #{String(salon.currentServingToken || 0).padStart(3, "0")}
+              </p>
+              <p className="text-[9px] text-teal-300 font-medium mt-0.5">
+                {lang === "bn" ? "চলতি সিরিয়াল" : "In Service"}
+              </p>
+            </div>
 
-              {/* Estimated Wait */}
-              <div className="p-2">
-                <p className="text-[10px] text-teal-200 font-medium">{t.estWaitTime}</p>
-                <p className="text-lg font-bold text-white leading-none mt-0.5">
-                  ~{salon.estWaitMins}
-                </p>
-                <p className="text-[9px] text-teal-300 font-medium mt-0.5">{t.minutes}</p>
-              </div>
+            {/* Estimated Wait */}
+            <div className="p-2">
+              <p className="text-[10px] text-teal-200 font-medium">{t.estWaitTime}</p>
+              <p className="text-lg font-bold text-white leading-none mt-0.5">
+                ~{salon.estWaitMins}
+              </p>
+              <p className="text-[9px] text-teal-300 font-medium mt-0.5">{t.minutes}</p>
             </div>
           </div>
+        </div>
       </section>
 
       {/* Services Menu Section */}

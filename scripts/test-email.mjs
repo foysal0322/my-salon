@@ -1,11 +1,19 @@
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
 
-const host = "ujz58nc6cr4g.fips.yxbq.mail-manager-smtp.amazonaws.com";
-const port = 587;
-const user = "inp-awalp2xcurrgakrl2uj6mtha";
-const pass = "Nsu01_Sm1P_2026";
-const to = "foysal0322@gmail.com";
+dotenv.config();
+
+const host = process.env.AWS_SES_SMTP_HOST || "email-smtp.us-east-1.amazonaws.com";
+const port = parseInt(process.env.AWS_SES_SMTP_PORT || "587", 10);
+const user = process.env.AWS_SES_SMTP_USER;
+const pass = process.env.AWS_SES_SMTP_PASS;
+const to = process.env.TEST_EMAIL_TO || "foysal0322@gmail.com";
 const from = process.env.EMAIL_FROM || "foysal0322@gmail.com";
+
+if (!user || !pass) {
+  console.error("Missing AWS_SES_SMTP_USER or AWS_SES_SMTP_PASS in environment variables.");
+  process.exit(1);
+}
 
 console.log(`Connecting to ${host}:${port}...`);
 console.log(`Sending test email from <${from}> to <${to}>`);

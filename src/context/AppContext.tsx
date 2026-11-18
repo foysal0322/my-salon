@@ -8,6 +8,8 @@ import {
   playNotificationChime,
   triggerDeviceHaptic,
   hasNotificationPermission,
+  unlockAudio,
+  registerServiceWorker,
 } from "@/lib/notifications";
 
 export interface UserSession {
@@ -39,6 +41,8 @@ interface AppContextType {
   toggleFavorite: (salonId: string) => Promise<boolean>;
   isPwaInstalled: boolean;
   canInstallPwa: boolean;
+  isInstallModalOpen: boolean;
+  setIsInstallModalOpen: (open: boolean) => void;
   promptPwaInstall: () => Promise<void>;
   dismissInstallBanner: () => void;
   showInstallBanner: boolean;
@@ -73,11 +77,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [activeBookingId, setActiveBookingIdState] = useState<string | null>(null);
   const [notificationToast, setNotificationToast] = useState<NotificationToast | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const prevOwnerWaitingCount = useRef<number | null>(null);
+  const prevCustomerBookingStatus = useRef<string | null>(null);
 
   // Initialize from localStorage and check PWA mode & notifications
   useEffect(() => {
     try {
+      // Register Service Worker for PWA installability and background push notifications
+      registerServiceWorker();
+
+      // Pre-warm audio on first user touch or click
+      const handleUserInteraction = () => {
+        unlockAudio();
+        window.removeEventListener("click", handleUserInteraction);
+        window.removeEventListener("touchstart", handleUserInteraction);
+      };
+      window.addEventListener("click", handleUserInteraction, { passive: true });
+      window.addEventListener("touchstart", handleUserInteraction, { passive: true });
       const savedLang = (localStorage.getItem("amarsalon_lang") || localStorage.getItem("amarsaloon_lang")) as Language;
       if (savedLang && (savedLang === "bn" || savedLang === "en")) {
         setLangState(savedLang);
@@ -115,7 +132,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const savedActiveBooking =
         localStorage.getItem("amarsalon_active_booking_id") ||
-      localStorage.getItem("amarsaloon_active_booking_id");
+        localStorage.getItem("amarsaloon_active_booking_id");
       if (savedActiveBooking) {
         setActiveBookingIdState(savedActiveBooking);
       }
@@ -173,8 +190,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } else {
         localStorage.removeItem("amarsalon_active_booking_id");
         localStorage.removeItem("amarsaloon_active_booking_id");
-        localStorage.removeItem("amarsalon_last_booking_id");
-        localStorage.removeItem("amarsaloon_last_booking_id");
       }
     } catch (e) { }
   };
@@ -226,19 +241,80 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         const isCurrentTurn = Boolean(data.queueMetrics?.isCurrentTurn);
         const status = data.booking.status;
+        const prevStatus = prevCustomerBookingStatus.current;
+        prevCustomerBookingStatus.current = status;
 
-        // If completed or cancelled, clear active tracker
+        // If completed or cancelled, handle status updates and clear active tracker
         if (["COMPLETED", "CANCELLED", "NO_SHOW", "SKIPPED"].includes(status)) {
+          if (status === "COMPLETED" && prevStatus !== "COMPLETED") {
+            playNotificationChime("urgent");
+            triggerDeviceHaptic([200, 100, 200, 100, 300]);
+
+            const title =
+              lang === "bn"
+                ? "🎉 সেবা সম্পন্ন হয়েছে! ধন্যবাদ!"
+                : "🎉 Service Completed! Thank You!";
+            const message =
+              lang === "bn"
+                ? `${data.saloon?.nameBn || "সেলুন"} এ আপনার সেবা সফলভাবে সম্পন্ন হয়েছে।`
+                : `Your service at ${data.saloon?.nameEn || "the salon"} has been completed.`;
+
+            sendBrowserNotification(title, {
+              body: message,
+              url: `/bookings?active=${activeBookingId}`,
+            });
+
+            setNotificationToast({
+              id: `completed_${Date.now()}`,
+              title,
+              message,
+              url: `/bookings?active=${activeBookingId}`,
+              type: "INFO",
+            });
+
+            try {
+              localStorage.setItem("amarsalon_last_completed_booking", JSON.stringify({ ...data.booking, saloon: data.saloon }));
+              localStorage.setItem("amarsalon_last_completed_id", activeBookingId);
+            } catch (e) { }
+          }
           setActiveBookingId(null);
           return;
         }
 
-          // When user's serial is available / current turn (only when waiting)
-          if (isCurrentTurn && status === "WAITING") {
-            const alertedKey = `amarsalon_alerted_${activeBookingId}`;
-            const alreadyAlerted =
-              localStorage.getItem(alertedKey) === "true" ||
-              localStorage.getItem(`amarsaloon_alerted_${activeBookingId}`) === "true";
+          // When status switches to IN_SERVICE
+          if (status === "IN_SERVICE" && prevStatus === "WAITING") {
+            playNotificationChime("normal");
+            triggerDeviceHaptic([150, 80, 150]);
+
+              const title =
+                lang === "bn"
+                  ? "✂️ আপনার সেবা শুরু হয়েছে!"
+                  : "✂️ Your Service Has Started!";
+              const message =
+                lang === "bn"
+                  ? `টোকেন #${data.booking.tokenNumber} এর সেবা শুরু হয়েছে।`
+                  : `Service for Token #${data.booking.tokenNumber} has begun.`;
+
+              sendBrowserNotification(title, {
+                body: message,
+                url: `/bookings?active=${activeBookingId}`,
+              });
+
+              setNotificationToast({
+                id: `service_started_${Date.now()}`,
+                title,
+                message,
+                url: `/bookings?active=${activeBookingId}`,
+                type: "INFO",
+              });
+            }
+
+            // When user's serial is available / current turn (only when waiting)
+            if (isCurrentTurn && status === "WAITING") {
+              const alertedKey = `amarsalon_alerted_${activeBookingId}`;
+              const alreadyAlerted =
+                localStorage.getItem(alertedKey) === "true" ||
+                localStorage.getItem(`amarsaloon_alerted_${activeBookingId}`) === "true";
 
             if (!alreadyAlerted) {
               try {
@@ -270,244 +346,242 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 type: "USER_TURN_READY",
               });
             }
-          }
-        } catch (e) { }
-      };
-
-      checkCustomerTurn();
-      const interval = setInterval(checkCustomerTurn, 4000);
-      return () => {
-        isMounted = false;
-        clearInterval(interval);
-      };
-    }, [activeBookingId, lang]);
-
-  // Real-time background poller: Salon Owner Live Serial Notification
-  useEffect(() => {
-    if (user?.role !== "OWNER" || !activeSalonId) {
-      prevOwnerWaitingCount.current = null;
-      return;
-    }
-
-    let isMounted = true;
-    const checkOwnerLiveQueue = async () => {
-      try {
-        const res = await fetch(`/api/v1/bookings?saloonId=${activeSalonId}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!isMounted || !data.bookings) return;
-
-        const waiting = data.waiting || [];
-
-        // Check if a new live serial booking was placed
-        if (
-          prevOwnerWaitingCount.current !== null &&
-          waiting.length > prevOwnerWaitingCount.current
-        ) {
-          const latest = waiting[waiting.length - 1];
-          playNotificationChime("normal");
-          triggerDeviceHaptic([150, 80, 150]);
-
-          const title =
-            lang === "bn"
-              ? "🔔 নতুন কাস্টমার সিরিয়াল নিয়েছেন!"
-              : "🔔 New Live Queue Booking!";
-          const message =
-            lang === "bn"
-              ? `টোকেন #${String(latest.tokenNumber).padStart(3, "0")} (${latest.guestName}) সিরিয়ালে যুক্ত হয়েছেন।`
-              : `Token #${String(latest.tokenNumber).padStart(3, "0")} (${latest.guestName}) joined the queue.`;
-
-          sendBrowserNotification(title, {
-            body: message,
-            url: "/owner/dashboard",
-          });
-
-          setNotificationToast({
-            id: `owner_alert_${Date.now()}`,
-            title,
-            message,
-            url: "/owner/dashboard",
-            type: "OWNER_NEW_BOOKING",
-          });
-        }
-
-        prevOwnerWaitingCount.current = waiting.length;
-      } catch (e) { }
-    };
-
-    checkOwnerLiveQueue();
-    const interval = setInterval(checkOwnerLiveQueue, 4000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [user, activeSalonId, lang]);
-
-  // Fetch user favorites when user logs in
-  useEffect(() => {
-    if (user?.id) {
-      fetch(`/api/v1/favorites?userId=${user.id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.favorites) {
-            setFavorites(data.favorites);
-          }
-        })
-        .catch(() => { });
-    } else {
-      try {
-        const guestFavs = localStorage.getItem("amarsalon_guest_favs") || localStorage.getItem("amarsaloon_guest_favs");
-        if (guestFavs) {
-          setFavorites(JSON.parse(guestFavs));
-        }
-      } catch (e) { }
-    }
-  }, [user]);
-
-  const setLang = (newLang: Language) => {
-    setLangState(newLang);
-    try {
-      localStorage.setItem("amarsalon_lang", newLang);
-    } catch (e) { }
-  };
-
-  const handleSetUser = (newUser: UserSession | null) => {
-    setUser(newUser);
-    try {
-      if (newUser) {
-        localStorage.setItem("amarsalon_user", JSON.stringify(newUser));
-      } else {
-        localStorage.removeItem("amarsalon_user");
-        localStorage.removeItem("amarsaloon_user");
       }
-    } catch (e) { }
+      } catch (e) { }
   };
 
-  const handleSetActiveSalon = (id: string | null) => {
-    setActiveSalonId(id);
+checkCustomerTurn();
+const interval = setInterval(checkCustomerTurn, 3000);
+return () => {
+  isMounted = false;
+  clearInterval(interval);
+};
+  }, [activeBookingId, lang]);
+
+// Real-time background poller: Salon Owner Live Serial Notification
+useEffect(() => {
+  if (user?.role !== "OWNER" || !activeSalonId) {
     prevOwnerWaitingCount.current = null;
+    return;
+  }
+
+  let isMounted = true;
+  const checkOwnerLiveQueue = async () => {
     try {
-      if (id) {
-        localStorage.setItem("amarsalon_active_salon", id);
-      } else {
-        localStorage.removeItem("amarsalon_active_salon");
-        localStorage.removeItem("amarsaloon_active_salon");
-      }
-    } catch (e) { }
-  };
+      const res = await fetch(`/api/v1/bookings?saloonId=${activeSalonId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!isMounted || !data.bookings) return;
 
-  const logout = () => {
-    handleSetUser(null);
-    handleSetActiveSalon(null);
-  };
+      const waiting = data.waiting || [];
 
-  const toggleFavorite = async (salonId: string): Promise<boolean> => {
-    const isFav = favorites.includes(salonId);
-    const updated = isFav
-      ? favorites.filter((id) => id !== salonId)
-      : [...favorites, salonId];
-    setFavorites(updated);
+      // Check if a new live serial booking was placed
+      if (
+        prevOwnerWaitingCount.current !== null &&
+        waiting.length > prevOwnerWaitingCount.current
+      ) {
+        const latest = waiting[waiting.length - 1];
+        playNotificationChime("normal");
+        triggerDeviceHaptic([150, 80, 150]);
 
-    if (user?.id) {
-      try {
-        await fetch("/api/v1/favorites", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: user.id, saloonId: salonId, action: isFav ? "remove" : "add" }),
+        const title =
+          lang === "bn"
+            ? "🔔 নতুন কাস্টমার সিরিয়াল নিয়েছেন!"
+            : "🔔 New Live Queue Booking!";
+        const message =
+          lang === "bn"
+            ? `টোকেন #${String(latest.tokenNumber).padStart(3, "0")} (${latest.guestName}) সিরিয়ালে যুক্ত হয়েছেন।`
+            : `Token #${String(latest.tokenNumber).padStart(3, "0")} (${latest.guestName}) joined the queue.`;
+
+        sendBrowserNotification(title, {
+          body: message,
+          url: "/owner/dashboard",
         });
-      } catch (e) { }
-    } else {
-      try {
-        localStorage.setItem("amarsalon_guest_favs", JSON.stringify(updated));
-      } catch (e) { }
-    }
-    return !isFav;
-  };
 
-  const promptPwaInstall = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if (choice.outcome === "accepted") {
-        setIsPwaInstalled(true);
-        setShowInstallBanner(false);
+        setNotificationToast({
+          id: `owner_alert_${Date.now()}`,
+          title,
+          message,
+          url: "/owner/dashboard",
+          type: "OWNER_NEW_BOOKING",
+        });
       }
-      setDeferredPrompt(null);
-    } else {
-      alert(
-        lang === "bn"
-          ? "আইফোনে ইনস্টল করতে সাফারি ব্রাউজারের নিচে 'Share' বাটনে ক্লিক করে 'Add to Home Screen' বেছে নিন।"
-          : "To install on iOS, tap the Share icon in Safari and select 'Add to Home Screen'."
-      );
-    }
-  };
 
-  const dismissInstallBanner = () => {
-    setShowInstallBanner(false);
-    try {
-      localStorage.setItem("amarsalon_banner_dismissed", "true");
+      prevOwnerWaitingCount.current = waiting.length;
     } catch (e) { }
   };
 
-  const playChime = () => {
-    playNotificationChime("normal");
+  checkOwnerLiveQueue();
+  const interval = setInterval(checkOwnerLiveQueue, 4000);
+  return () => {
+    isMounted = false;
+    clearInterval(interval);
   };
+}, [user, activeSalonId, lang]);
 
-  const triggerHaptic = (ms = 40) => {
-    triggerDeviceHaptic(ms);
-  };
-
-  const setTheme = (newTheme: "light" | "dark") => {
-    setThemeState(newTheme);
+// Fetch user favorites when user logs in
+useEffect(() => {
+  if (user?.id) {
+    fetch(`/api/v1/favorites?userId=${user.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.favorites) {
+          setFavorites(data.favorites);
+        }
+      })
+      .catch(() => { });
+  } else {
     try {
-      localStorage.setItem("amarsalon_theme", newTheme);
-      if (newTheme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
+      const guestFavs = localStorage.getItem("amarsalon_guest_favs") || localStorage.getItem("amarsaloon_guest_favs");
+      if (guestFavs) {
+        setFavorites(JSON.parse(guestFavs));
       }
     } catch (e) { }
-  };
+  }
+}, [user]);
 
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
+const setLang = (newLang: Language) => {
+  setLangState(newLang);
+  try {
+    localStorage.setItem("amarsalon_lang", newLang);
+  } catch (e) { }
+};
 
-  return (
-    <AppContext.Provider
-      value={{
-        lang,
-        setLang,
-        t: translations[lang],
-        user,
-        setUser: handleSetUser,
-        logout,
-        activeSalonId,
-        setActiveSalonId: handleSetActiveSalon,
-        favorites,
-        toggleFavorite,
-        isPwaInstalled,
-        canInstallPwa: !!deferredPrompt,
-        promptPwaInstall,
-        dismissInstallBanner,
-        showInstallBanner: showInstallBanner && !isPwaInstalled,
-        playChime,
-        triggerHaptic,
-        activeBookingId,
-        setActiveBookingId,
-        notificationToast,
-        dismissNotificationToast,
-        showNotificationToast,
-        notificationsEnabled,
-        requestNotifications,
-        theme,
-        setTheme,
-        toggleTheme,
-      }}
-    >
-      {children}
-    </AppContext.Provider>
-  );
+const handleSetUser = (newUser: UserSession | null) => {
+  setUser(newUser);
+  try {
+    if (newUser) {
+      localStorage.setItem("amarsalon_user", JSON.stringify(newUser));
+    } else {
+      localStorage.removeItem("amarsalon_user");
+      localStorage.removeItem("amarsaloon_user");
+    }
+  } catch (e) { }
+};
+
+const handleSetActiveSalon = (id: string | null) => {
+  setActiveSalonId(id);
+  prevOwnerWaitingCount.current = null;
+  try {
+    if (id) {
+      localStorage.setItem("amarsalon_active_salon", id);
+    } else {
+      localStorage.removeItem("amarsalon_active_salon");
+      localStorage.removeItem("amarsaloon_active_salon");
+    }
+  } catch (e) { }
+};
+
+const logout = () => {
+  handleSetUser(null);
+  handleSetActiveSalon(null);
+};
+
+const toggleFavorite = async (salonId: string): Promise<boolean> => {
+  const isFav = favorites.includes(salonId);
+  const updated = isFav
+    ? favorites.filter((id) => id !== salonId)
+    : [...favorites, salonId];
+  setFavorites(updated);
+
+  if (user?.id) {
+    try {
+      await fetch("/api/v1/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, saloonId: salonId, action: isFav ? "remove" : "add" }),
+      });
+    } catch (e) { }
+  } else {
+    try {
+      localStorage.setItem("amarsalon_guest_favs", JSON.stringify(updated));
+    } catch (e) { }
+  }
+  return !isFav;
+};
+
+const promptPwaInstall = async () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    if (choice.outcome === "accepted") {
+      setIsPwaInstalled(true);
+      setShowInstallBanner(false);
+    }
+    setDeferredPrompt(null);
+  } else {
+    setIsInstallModalOpen(true);
+  }
+};
+
+const dismissInstallBanner = () => {
+  setShowInstallBanner(false);
+  try {
+    localStorage.setItem("amarsalon_banner_dismissed", "true");
+  } catch (e) { }
+};
+
+const playChime = () => {
+  playNotificationChime("normal");
+};
+
+const triggerHaptic = (ms = 40) => {
+  triggerDeviceHaptic(ms);
+};
+
+const setTheme = (newTheme: "light" | "dark") => {
+  setThemeState(newTheme);
+  try {
+    localStorage.setItem("amarsalon_theme", newTheme);
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  } catch (e) { }
+};
+
+const toggleTheme = () => {
+  setTheme(theme === "dark" ? "light" : "dark");
+};
+
+return (
+  <AppContext.Provider
+    value={{
+      lang,
+      setLang,
+      t: translations[lang],
+      user,
+      setUser: handleSetUser,
+      logout,
+      activeSalonId,
+      setActiveSalonId: handleSetActiveSalon,
+      favorites,
+      toggleFavorite,
+      isPwaInstalled,
+      canInstallPwa: !!deferredPrompt,
+      isInstallModalOpen,
+      setIsInstallModalOpen,
+      promptPwaInstall,
+      dismissInstallBanner,
+      showInstallBanner: showInstallBanner && !isPwaInstalled,
+      playChime,
+      triggerHaptic,
+      activeBookingId,
+      setActiveBookingId,
+      notificationToast,
+      dismissNotificationToast,
+      showNotificationToast,
+      notificationsEnabled,
+      requestNotifications,
+      theme,
+      setTheme,
+      toggleTheme,
+    }}
+  >
+    {children}
+  </AppContext.Provider>
+);
 }
 
 export function useApp() {

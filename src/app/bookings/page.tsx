@@ -46,126 +46,150 @@ function BookingsContent() {
       const res = await fetch(`/api/v1/bookings?id=${id}`);
       const data = await res.json();
       if (data.booking) {
+        const prevStatus = activeBooking?.status;
+        const newStatus = data.booking.status;
+
         setActiveBooking({ ...data.booking, saloon: data.saloon });
         setQueueMetrics(data.queueMetrics);
 
-        const status = data.booking.status;
-        if (["COMPLETED", "CANCELLED", "NO_SHOW"].includes(status)) {
-          isFinishedRef.current = true;
-          return;
-        }
-
-        // Turn arrived notification - ONLY when WAITING and NOT already alerted
-        const isCurrentTurn = Boolean(data.queueMetrics?.isCurrentTurn);
-        const isWaiting = status === "WAITING";
-        const alreadyAlerted =
-          alertedTurnRef.current[data.booking.id] ||
-          (typeof window !== "undefined" &&
-            (localStorage.getItem(`amarsalon_alerted_${data.booking.id}`) === "true" ||
-              localStorage.getItem(`amarsaloon_alerted_${data.booking.id}`) === "true"));
-
-        if (isCurrentTurn && isWaiting && !alreadyAlerted) {
-          alertedTurnRef.current[data.booking.id] = true;
-          try {
-            localStorage.setItem(`amarsalon_alerted_${data.booking.id}`, "true");
-          } catch (e) { }
-
-          playNotificationChime("urgent");
-          triggerDeviceHaptic([200, 100, 200, 100, 300]);
-          sendBrowserNotification(
-            lang === "bn"
-              ? `🎉 আপনার সিরিয়াল এসেছে! #${data.booking.tokenNumber}`
-              : `🎉 Your Turn Has Arrived! #${data.booking.tokenNumber}`,
-            {
-              body:
+          if (newStatus === "COMPLETED") {
+            isFinishedRef.current = true;
+            if (prevStatus && prevStatus !== "COMPLETED") {
+              playNotificationChime("urgent");
+              triggerDeviceHaptic([200, 100, 200, 100, 300]);
+              sendBrowserNotification(
                 lang === "bn"
-                  ? `${data.saloon?.nameBn || "সেলুন"} এ আপনার চেয়ার প্রস্তুত। এখনই আসুন!`
-                  : `Your chair is ready at ${data.saloon?.nameEn || "the salon"}. Please enter now!`,
-              url: `/bookings?active=${data.booking.id}`,
+                  ? `🎉 সেবা সম্পন্ন হয়েছে! ধন্যবাদ!`
+                  : `🎉 Service Completed! Thank You!`,
+                {
+                  body:
+                    lang === "bn"
+                      ? `${data.saloon?.nameBn || "সেলুন"} এ আপনার সেবা সমাপ্ত হয়েছে।`
+                      : `Your service at ${data.saloon?.nameEn || "the salon"} is complete.`,
+                  url: `/bookings?active=${data.booking.id}`,
+                }
+              );
+              fetchUserBookings();
             }
-          );
+            return;
+          }
+
+          if (["CANCELLED", "NO_SHOW", "SKIPPED"].includes(newStatus)) {
+            isFinishedRef.current = true;
+            return;
+          }
+
+          // Turn arrived notification - ONLY when WAITING and NOT already alerted
+          const isCurrentTurn = Boolean(data.queueMetrics?.isCurrentTurn);
+          const isWaiting = newStatus === "WAITING";
+          const alreadyAlerted =
+            alertedTurnRef.current[data.booking.id] ||
+            (typeof window !== "undefined" &&
+              (localStorage.getItem(`amarsalon_alerted_${data.booking.id}`) === "true" ||
+                localStorage.getItem(`amarsaloon_alerted_${data.booking.id}`) === "true"));
+
+          if (isCurrentTurn && isWaiting && !alreadyAlerted) {
+            alertedTurnRef.current[data.booking.id] = true;
+            try {
+              localStorage.setItem(`amarsalon_alerted_${data.booking.id}`, "true");
+            } catch (e) { }
+
+            playNotificationChime("urgent");
+            triggerDeviceHaptic([200, 100, 200, 100, 300]);
+            sendBrowserNotification(
+              lang === "bn"
+                ? `🎉 আপনার সিরিয়াল এসেছে! #${data.booking.tokenNumber}`
+                : `🎉 Your Turn Has Arrived! #${data.booking.tokenNumber}`,
+              {
+                body:
+                  lang === "bn"
+                    ? `${data.saloon?.nameBn || "সেলুন"} এ আপনার চেয়ার প্রস্তুত। এখনই আসুন!`
+                    : `Your chair is ready at ${data.saloon?.nameEn || "the salon"}. Please enter now!`,
+                url: `/bookings?active=${data.booking.id}`,
+              }
+            );
+          }
         }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
-      console.error(e);
-    }
-  };
+    };
 
-  // Fetch user bookings history
-  const fetchUserBookings = async () => {
-    let targetPhone = user?.phone || "";
-    let targetId = user?.id || "";
-    let fallbackBookingId: string | null = activeBookingIdParam;
+    // Fetch user bookings history
+    const fetchUserBookings = async () => {
+      let targetPhone = user?.phone || "";
+      let targetId = user?.id || "";
+      let fallbackBookingId: string | null = activeBookingIdParam;
 
-    if (!targetId && !targetPhone) {
-      try {
-        targetPhone = localStorage.getItem("amarsalon_guest_phone") || localStorage.getItem("amarsaloon_guest_phone") || "";
-        fallbackBookingId = fallbackBookingId || localStorage.getItem("amarsalon_last_booking_id") || localStorage.getItem("amarsaloon_last_booking_id");
-      } catch (e) { }
-    }
+      if (!targetId && !targetPhone) {
+        try {
+          targetPhone = localStorage.getItem("amarsalon_guest_phone") || localStorage.getItem("amarsaloon_guest_phone") || "";
+          fallbackBookingId = fallbackBookingId || localStorage.getItem("amarsalon_last_booking_id") || localStorage.getItem("amarsaloon_last_booking_id");
+        } catch (e) { }
+      }
 
-    if (!targetId && !targetPhone && !fallbackBookingId) {
-      setLoading(false);
-      return;
-    }
-
-    if (fallbackBookingId && !activeBooking) {
-      fetchActiveBooking(fallbackBookingId);
-    }
-
-    try {
-      const query = targetId
-        ? `userId=${targetId}`
-        : targetPhone
-          ? `phone=${targetPhone}`
-          : "";
-
-      if (!query) {
+      if (!targetId && !targetPhone && !fallbackBookingId) {
         setLoading(false);
         return;
       }
 
-      const res = await fetch(`/api/v1/bookings?${query}`);
-      const data = await res.json();
-      if (data.bookings) {
-        setHistoryBookings(data.bookings);
-        // If no explicit active param, find the latest WAITING or IN_SERVICE booking
-        if (!activeBookingIdParam && !activeBooking) {
-          const currentActive = data.bookings.find((b: any) =>
-            ["WAITING", "IN_SERVICE"].includes(b.status)
-          );
-          if (currentActive) {
-            fetchActiveBooking(currentActive.id);
+      if (fallbackBookingId && !activeBooking) {
+        fetchActiveBooking(fallbackBookingId);
+      }
+
+      try {
+        const query = targetId
+          ? `userId=${targetId}`
+          : targetPhone
+            ? `phone=${targetPhone}`
+            : "";
+
+        if (!query) {
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch(`/api/v1/bookings?${query}`);
+        const data = await res.json();
+        if (data.bookings) {
+          setHistoryBookings(data.bookings);
+          // If no explicit active param, find the latest WAITING or IN_SERVICE booking
+          if (!activeBookingIdParam && !activeBooking) {
+            const currentActive = data.bookings.find((b: any) =>
+              ["WAITING", "IN_SERVICE"].includes(b.status)
+            );
+            if (currentActive) {
+              fetchActiveBooking(currentActive.id);
+            }
           }
         }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  useEffect(() => {
-    activeBookingIdRef.current = activeBooking?.id || activeBookingIdParam || null;
-    if (activeBooking && ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(activeBooking.status)) {
-      isFinishedRef.current = true;
-    }
-  }, [activeBooking, activeBookingIdParam]);
-
-  useEffect(() => {
-    if (activeBookingIdParam) {
-      fetchActiveBooking(activeBookingIdParam);
-    }
-    fetchUserBookings();
-
-    // Auto refresh active tracker every 10 seconds (stops when service completed/cancelled)
-    const interval = setInterval(() => {
-      const currentTargetId = activeBookingIdRef.current;
-      if (currentTargetId && !isFinishedRef.current) {
-        fetchActiveBooking(currentTargetId);
+    useEffect(() => {
+      activeBookingIdRef.current = activeBooking?.id || activeBookingIdParam || null;
+      if (activeBooking && ["COMPLETED", "CANCELLED", "NO_SHOW"].includes(activeBooking.status)) {
+        isFinishedRef.current = true;
       }
-    }, 10000);
+    }, [activeBooking, activeBookingIdParam]);
+
+    useEffect(() => {
+      if (activeBookingIdParam) {
+        fetchActiveBooking(activeBookingIdParam);
+      }
+      fetchUserBookings();
+
+      // Auto refresh active tracker every 3 seconds (stops when service completed/cancelled)
+      const interval = setInterval(() => {
+        const currentTargetId = activeBookingIdRef.current;
+        if (currentTargetId && !isFinishedRef.current) {
+          fetchActiveBooking(currentTargetId);
+        }
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [activeBookingIdParam, user]);
@@ -329,119 +353,163 @@ function BookingsContent() {
 
         {/* COMPLETED SERVICE NOTIFICATION CARD */}
         {activeBooking && activeBooking.status === "COMPLETED" ? (
-          <div className="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-3xl p-5 text-center space-y-2 animate-in fade-in shadow-xs">
-            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <h3 className="font-bold text-sm text-emerald-900 dark:text-emerald-200">
-              {lang === "bn" ? "সার্ভিসটি সফলভাবে সম্পন্ন হয়েছে!" : "Service Completed!"}
-            </h3>
-            <p className="text-xs text-emerald-700 dark:text-emerald-400">
-              {lang === "bn"
-                ? `${activeBooking.saloon?.nameBn || "সেলুন"} এ আসার জন্য ধন্যবাদ।`
-                : `Thank you for visiting ${activeBooking.saloon?.nameEn || "the salon"}.`}
-            </p>
-          </div>
+              <div className="bg-gradient-to-br from-emerald-900/90 via-teal-900 to-slate-900 text-white rounded-3xl p-5 text-center space-y-4 animate-in fade-in shadow-xl border border-emerald-500/30">
+                <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/40">
+                  <CheckCircle2 className="w-8 h-8 animate-pulse" />
+                </div>
+
+                <div>
+                  <span className="inline-block px-3 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 uppercase tracking-wider mb-2">
+                    {lang === "bn" ? "🎉 সেবা সম্পন্ন হয়েছে" : "🎉 Service Completed"}
+                  </span>
+                  <h3 className="font-extrabold text-base text-white">
+                    {activeBooking.saloon?.nameBn || activeBooking.saloon?.nameEn || "সেলুন"}
+                  </h3>
+                  <p className="text-xs text-emerald-200/80 mt-0.5">
+                    {lang === "bn"
+                      ? "আপনার সেবা সফলভাবে সম্পন্ন হয়েছে। আমাদের সেলুনে আসার জন্য ধন্যবাদ!"
+                      : "Your service has been completed. Thank you for choosing us!"}
+                  </p>
+                </div>
+
+                {/* Receipt Summary Box */}
+                <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-md border border-white/10 text-left space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-emerald-200">{lang === "bn" ? "টোকেন নম্বর" : "Token Number"}:</span>
+                    <span className="font-black text-amber-300 font-mono text-base">#{String(activeBooking.tokenNumber).padStart(3, "0")}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-emerald-200">{lang === "bn" ? "তারিখ" : "Date"}:</span>
+                    <span className="text-white font-medium">{activeBooking.bookingDate}</span>
+                  </div>
+                  {activeBooking.guestName && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-emerald-200">{lang === "bn" ? "কাস্টমার" : "Customer"}:</span>
+                      <span className="text-white font-medium">{activeBooking.guestName}</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                    <span className="text-xs font-bold text-white">{lang === "bn" ? "মোট পরিশোধ" : "Total Bill"}:</span>
+                    <span className="text-base font-extrabold text-amber-300">৳{activeBooking.totalAmount}</span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 pt-1">
+                  <Link
+                    href="/"
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs text-center shadow-md transition"
+                  >
+                    {lang === "bn" ? "নতুন বুকিং করুন" : "Book New Service"}
+                  </Link>
+                  <button
+                    onClick={() => setActiveBooking(null)}
+                    className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 text-emerald-200 text-xs font-semibold transition cursor-pointer"
+                  >
+                    {lang === "bn" ? "বন্ধ করুন" : "Dismiss"}
+                  </button>
+                </div>
+              </div>
         ) : null}
 
-        {/* BOOKINGS HISTORY SECTION */}
-        <section className="mt-6">
-          <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-1.5">
-            <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-            <span>{lang === "bn" ? "সকল সিরিয়াল ও বুকিং" : "Booking History"}</span>
-          </h2>
+              {/* BOOKINGS HISTORY SECTION */}
+              <section className="mt-6">
+                <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                  <span>{lang === "bn" ? "সকল সিরিয়াল ও বুকিং" : "Booking History"}</span>
+                </h2>
 
-          {loading ? (
-            <div className="space-y-3 animate-pulse">
-              <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-              <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-            </div>
-          ) : historyBookings.length === 0 && !activeBooking ? (
-            <div className="bg-white dark:bg-slate-800/90 rounded-3xl p-8 border border-slate-200/80 dark:border-slate-700 text-center shadow-xs">
-              <div className="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto mb-3">
-                <Ticket className="w-6 h-6" />
-              </div>
-              <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
-                {lang === "bn" ? "কোন সক্রিয় সিরিয়াল নেই" : "No Active Bookings"}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs mx-auto">
-                {lang === "bn"
-                  ? "কাছের সেলুন খুঁজে সার্ভিস বেছে নিন এবং ঘরে বসেই লাইভ সিরিয়াল নিন।"
-                  : "Discover nearby salons and take live waiting tokens directly from your phone."}
-              </p>
-              <Link
-                href="/"
-                className="inline-block text-xs font-bold bg-[#0D9488] text-white px-5 py-2.5 rounded-full shadow-sm hover:bg-[#115E59] transition"
-              >
-                {lang === "bn" ? "সেলুন খুঁজুন" : "Browse Salons"}
-              </Link>
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {historyBookings.map((b) => {
-                const isWaiting = b.status === "WAITING";
-                const isCompleted = b.status === "COMPLETED";
-                const isCancelled = b.status === "CANCELLED";
-
-                return (
-                  <div
-                    key={b.id}
-                    className="bg-white dark:bg-slate-800/90 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono font-bold text-xs bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md">
-                          #{String(b.tokenNumber).padStart(3, "0")}
-                        </span>
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isCompleted
-                            ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                            : isWaiting
-                              ? "bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                              : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
-                            }`}
-                        >
-                          {b.status}
-                        </span>
-                      </div>
-
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                        {b.saloon?.nameBn || "সেলুন"}
-                      </h4>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
-                        {b.bookingDate} • ৳{b.totalAmount}
-                      </p>
-                    </div>
-
-                    <div>
-                      {isWaiting && (
-                        <button
-                          onClick={() => {
-                            fetchActiveBooking(b.id);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
-                          className="text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 transition cursor-pointer"
-                        >
-                          {lang === "bn" ? "লাইভ ট্র্যাক" : "Track"}
-                        </button>
-                      )}
-                    </div>
+                {loading ? (
+                  <div className="space-y-3 animate-pulse">
+                    <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+                    <div className="h-20 bg-slate-200 dark:bg-slate-800 rounded-2xl" />
                   </div>
-                );
-              })}
+                ) : historyBookings.length === 0 && !activeBooking ? (
+                  <div className="bg-white dark:bg-slate-800/90 rounded-3xl p-8 border border-slate-200/80 dark:border-slate-700 text-center shadow-xs">
+                    <div className="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto mb-3">
+                      <Ticket className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
+                      {lang === "bn" ? "কোন সক্রিয় সিরিয়াল নেই" : "No Active Bookings"}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 max-w-xs mx-auto">
+                      {lang === "bn"
+                        ? "কাছের সেলুন খুঁজে সার্ভিস বেছে নিন এবং ঘরে বসেই লাইভ সিরিয়াল নিন।"
+                        : "Discover nearby salons and take live waiting tokens directly from your phone."}
+                    </p>
+                    <Link
+                      href="/"
+                      className="inline-block text-xs font-bold bg-[#0D9488] text-white px-5 py-2.5 rounded-full shadow-sm hover:bg-[#115E59] transition"
+                    >
+                      {lang === "bn" ? "সেলুন খুঁজুন" : "Browse Salons"}
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {historyBookings.map((b) => {
+                      const isWaiting = b.status === "WAITING";
+                      const isCompleted = b.status === "COMPLETED";
+                      const isCancelled = b.status === "CANCELLED";
+
+                      return (
+                        <div
+                          key={b.id}
+                          className="bg-white dark:bg-slate-800/90 rounded-2xl p-3.5 border border-slate-200/80 dark:border-slate-700 shadow-xs flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-mono font-bold text-xs bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 px-2 py-0.5 rounded-md">
+                                #{String(b.tokenNumber).padStart(3, "0")}
+                              </span>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isCompleted
+                                  ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                  : isWaiting
+                                    ? "bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                                    : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                                  }`}
+                              >
+                                {b.status}
+                              </span>
+                            </div>
+
+                            <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                              {b.saloon?.nameBn || "সেলুন"}
+                            </h4>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
+                              {b.bookingDate} • ৳{b.totalAmount}
+                            </p>
+                          </div>
+
+                          <div>
+                            {isWaiting && (
+                              <button
+                                onClick={() => {
+                                  fetchActiveBooking(b.id);
+                                  window.scrollTo({ top: 0, behavior: "smooth" });
+                                }}
+                                className="text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 transition cursor-pointer"
+                              >
+                                {lang === "bn" ? "লাইভ ট্র্যাক" : "Track"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+                }
+              </section>
             </div>
-          )
-          }
-        </section>
-      </div>
-    </AppShell>
-  );
+          </AppShell>
+        );
 }
 
-export default function BookingsPage() {
+        export default function BookingsPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">লোড হচ্ছে...</div>}>
-      <BookingsContent />
-    </Suspense>
-  );
+        <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">লোড হচ্ছে...</div>}>
+          <BookingsContent />
+        </Suspense>
+        );
 }
