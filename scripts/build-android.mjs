@@ -20,7 +20,7 @@ try {
 
   console.log("\n🔨 2. Compiling Android APK with Gradle...");
   const gradlewCmd = process.platform === "win32" ? ".\\gradlew.bat" : "./gradlew";
-  
+
   // Set ANDROID_HOME and JAVA_HOME if not defined
   const env = { ...process.env };
   if (!env.ANDROID_HOME) {
@@ -50,10 +50,14 @@ try {
     const stats = fs.statSync(apkPath);
     const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
 
+    const rootApkPath = path.join(rootDir, "AmarSalon.apk");
+    fs.copyFileSync(apkPath, rootApkPath);
+
     console.log("\n==========================================");
     console.log("  🎉 APK Build Succeeded!");
     console.log("==========================================");
-    console.log(`📁 APK Location: ${apkPath}`);
+    console.log(`📁 Root APK:     ${rootApkPath}`);
+    console.log(`📁 Gradle Build: ${apkPath}`);
     console.log(`⚖️ APK File Size: ${sizeMb} MB (Ultra-Lightweight)`);
     console.log("\n📱 To install directly to a connected Android phone:");
     console.log("   adb install -r android/app/build/outputs/apk/debug/app-debug.apk");

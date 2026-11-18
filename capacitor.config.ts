@@ -8,6 +8,7 @@ const config: CapacitorConfig = {
     url: "https://amarsalon.xyz",
     androidScheme: "https",
     cleartext: false,
+    errorPath: "offline.html",
   },
   android: {
     allowMixedContent: true,
@@ -16,10 +17,11 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1800,
+      launchShowDuration: 1500,
       launchAutoHide: true,
-      backgroundColor: "#0D9488",
-      androidScaleType: "CENTER_CROP",
+      backgroundColor: "#0F534F",
+      androidSplashResourceName: "splash",
+      androidScaleType: "CENTER",
       showSpinner: false,
     },
     StatusBar: {

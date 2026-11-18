@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>আমার সেলুন — অফলাইন মোড</title>
+  <style>
+    :root {
+      --primary: #0F534F;
+      --primary-dark: #0A3936;
+      --accent: #F59E0B;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --income: #059669;
+      --expense: #E11D48;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hind Siliguri", "Noto Sans Bengali", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: #0A3936;
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #0F534F 0%, #0A3936 100%);
+      color: white;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+      fill: #F59E0B;
+    }
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: #99F6E4;
+    }
+    .offline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #FECACA;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background: #EF4444;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Content */
+    main {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Alert Banner */
+    .offline-alert {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .offline-alert svg {
+      width: 20px;
+      height: 20px;
+      color: #D97706;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .offline-alert-text {
+      font-size: 12px;
+      color: #92400E;
+      line-height: 1.5;
+    }
+    .offline-alert-text strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* Retry Bar */
+    .retry-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .retry-card span {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .btn-retry {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-retry:active {
+      transform: scale(0.96);
+    }
+
+    /* Ledger Summary Cards */
+    .ledger-section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ledger-section-title small {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .summary-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 10px;
+      text-align: center;
+    }
+    .summary-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .summary-val {
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .val-income { color: var(--income); }
+    .val-expense { color: var(--expense); }
+    .val-net { color: var(--primary); }
+
+    /* New Entry Form */
+    .entry-form-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .form-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .type-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .type-btn {
+      padding: 9px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: #F8FAFC;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .type-btn.active-income {
+      background: #ECFDF5;
+      border-color: var(--income);
+      color: var(--income);
+    }
+    .type-btn.active-expense {
+      background: #FFF1F2;
+      border-color: var(--expense);
+      color: var(--expense);
+    }
+    .input-field {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    .input-field:focus {
+      border-color: var(--primary);
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 13px;
+      font-weight: 800;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-income {
+      background: var(--income);
+    }
+    .btn-expense {
+      background: var(--expense);
+    }
+    .btn-submit:active {
+      transform: scale(0.98);
+    }
+
+    /* Entries List */
+    .entries-container {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .entry-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #F1F5F9;
+    }
+    .entry-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .entry-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .entry-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .entry-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .entry-amount {
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .offline-tag {
+      font-size: 9px;
+      background: #FEF3C7;
+      color: #92400E;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      margin-top: 2px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header>
+      <div class="header-top">
+        <div class="brand">
+          <div class="brand-logo">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 3C5.34315 3 4 4.34315 4 6V18C4 19.6569 5.34315 21 7 21C8.65685 21 10 19.6569 10 18V6C10 4.34315 8.65685 3 7 3Z"></path>
+              <path d="M17 3C15.3431 3 14 4.34315 14 6V18C14 19.6569 15.3431 21 17 21C18.6569 21 20 19.6569 20 18V6C20 4.34315 18.6569 3 17 3Z"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="brand-title">আমার সেলুন</div>
+            <div class="brand-sub">অফলাইন হিসাব খাতা (Offline Mode)</div>
+          </div>
+        </div>
+        <div class="offline-badge">
+          <span class="pulse-dot"></span>
+          <span>অফলাইন</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Offline Notice -->
+      <div class="offline-alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div class="offline-alert-text">
+          <strong>আপনি বর্তমানে অফলাইনে আছেন</strong>
+          লাইভ সিরিয়াল নেওয়ার জন্য সক্রিয় ইন্টারনেট সংযোগ প্রয়োজন। তবে সেলুন মালিকরা এই পাতায় <b>হিসাব খাতা (আয়-ব্যয়)</b> নিরাপদে লিখতে পারবেন। ইন্টারনেট ফিরে এলে স্বয়ংক্রিয়ভাবে ক্লাউড সার্ভারে সিঙ্ক হয়ে যাবে।
+        </div>
+      </div>
+
+      <!-- Retry Bar -->
+      <div class="retry-card">
+        <span>ইন্টারনেট চালু করেছেন?</span>
+        <button class="btn-retry" onclick="retryOnline()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          সার্ভারে যুক্ত হন
+        </button>
+      </div>
+
+      <!-- Ledger Summary -->
+      <div>
+        <div class="ledger-section-title">
+          <span>হিসাব খাতার সারসংক্ষেপ</span>
+          <small id="syncBadge">লোকাল ডেটা</small>
+        </div>
+        <div class="summary-grid" style="margin-top: 10px;">
+          <div class="summary-card">
+            <div class="summary-label">মোট আয়</div>
+            <div class="summary-val val-income" id="incomeVal">৳০</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">মোট ব্যয়</div>
+            <div class="summary-val val-expense" id="expenseVal">৳০</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-label">অবশিষ্ট লাভ</div>
+            <div class="summary-val val-net" id="netVal">৳০</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Entry Form -->
+      <div class="entry-form-card">
+        <div class="form-title">নতুন আয় বা ব্যয় লিখুন</div>
+        <div class="type-selector">
+          <button type="button" class="type-btn active-income" id="btnTypeIncome" onclick="setType('INCOME')">+ নতুন আয়</button>
+          <button type="button" class="type-btn" id="btnTypeExpense" onclick="setType('EXPENSE')">- নতুন ব্যয়</button>
+        </div>
+        <input type="text" id="entryTitle" class="input-field" placeholder="বিবরণ (যেমন: হেয়ারকাট, দোকান ভাড়া, কসমেটিক্স)" required>
+        <input type="number" id="entryAmount" class="input-field" placeholder="টাকার পরিমাণ (৳)" required>
+        <select id="entryPayment" class="input-field">
+          <option value="CASH">পদ্ধতি: নগদ (Cash)</option>
+          <option value="BKASH">পদ্ধতি: বিকাশ (bKash)</option>
+          <option value="NAGAD">পদ্ধতি: নগদ (Nagad)</option>
+        </select>
+        <button type="button" class="btn-submit btn-income" id="btnSubmit" onclick="saveOfflineEntry()">
+          অফলাইনে আয় সংরক্ষণ করুন
+        </button>
+      </div>
+
+      <!-- Recent Entries List -->
+      <div class="entries-container">
+        <div class="form-title" style="margin-bottom: 8px;">সাম্প্রতিক লেনদেন তালিকা</div>
+        <div id="entriesList">
+          <div style="text-align: center; padding: 20px 0; color: var(--text-muted); font-size: 12px;">
+            কোনো সংরক্ষিত হিসাব পাওয়া যায়নি
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let currentType = 'INCOME';
+    const activeSalonId = localStorage.getItem('amarsalon_active_salon') || '1051';
+    const cacheKey = `amarsalon_ledger_cache_${activeSalonId}`;
+    const queueKey = `amarsalon_ledger_queue_${activeSalonId}`;
+
+    function setType(type) {
+      currentType = type;
+      const btnIncome = document.getElementById('btnTypeIncome');
+      const btnExpense = document.getElementById('btnTypeExpense');
+      const btnSubmit = document.getElementById('btnSubmit');
+
+      if (type === 'INCOME') {
+        btnIncome.className = 'type-btn active-income';
+        btnExpense.className = 'type-btn';
+        btnSubmit.className = 'btn-submit btn-income';
+        btnSubmit.innerText = 'অফলাইনে আয় সংরক্ষণ করুন';
+      } else {
+        btnIncome.className = 'type-btn';
+        btnExpense.className = 'type-btn active-expense';
+        btnSubmit.className = 'btn-submit btn-expense';
+        btnSubmit.innerText = 'অফলাইনে ব্যয় সংরক্ষণ করুন';
+      }
+    }
+
+    function loadLedger() {
+      let income = 0;
+      let expense = 0;
+      let entries = [];
+
+      try {
+        const cachedRaw = localStorage.getItem(cacheKey);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached.summary) {
+            income = Number(cached.summary.totalIncome || 0);
+            expense = Number(cached.summary.totalExpense || 0);
+          }
+          if (cached.entries) {
+            entries = cached.entries;
+          }
+        }
+      } catch (e) {}
+
+      // Add queued entries
+      try {
+        const queueRaw = localStorage.getItem(queueKey);
+        if (queueRaw) {
+          const queue = JSON.parse(queueRaw);
+          queue.forEach(item => {
+            const amt = Number(item.amount || 0);
+            if (item.type === 'INCOME') income += amt;
+            else expense += amt;
+            entries.unshift(item);
+          });
+          const badge = document.getElementById('syncBadge');
+          if (queue.length > 0) {
+            badge.innerText = `⏳ ${queue.length}টি অফলাইনে জমা`;
+            badge.style.color = '#D97706';
+          }
+        }
+      } catch (e) {}
+
+      document.getElementById('incomeVal').innerText = `৳${income.toLocaleString('bn-BD')}`;
+      document.getElementById('expenseVal').innerText = `৳${expense.toLocaleString('bn-BD')}`;
+      const net = income - expense;
+      document.getElementById('netVal').innerText = `৳${net.toLocaleString('bn-BD')}`;
+
+      // Render Entries
+      const listEl = document.getElementById('entriesList');
+      if (entries.length === 0) {
+        listEl.innerHTML = '<div style="text-align: center; padding: 20px 0; color: var(--text-muted); font-size: 12px;">কোনো সংরক্ষিত হিসাব পাওয়া যায়নি</div>';
+        return;
+      }
+
+      listEl.innerHTML = entries.slice(0, 15).map(e => {
+        const isInc = e.type === 'INCOME';
+        const color = isInc ? 'var(--income)' : 'var(--expense)';
+        const sign = isInc ? '+' : '-';
+        return `
+          <div class="entry-item">
+            <div class="entry-left">
+              <span class="entry-title">${e.title || 'লেনদেন'}</span>
+              <span class="entry-sub">${e.date || 'আজ'} • ${e.paymentMethod || 'CASH'}</span>
+              ${e.offline ? '<span class="offline-tag">⏳ সিঙ্ক বাকি</span>' : ''}
+            </div>
+            <div class="entry-amount" style="color: ${color}">
+              ${sign}৳${Number(e.amount).toLocaleString('bn-BD')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function saveOfflineEntry() {
+      const title = document.getElementById('entryTitle').value.trim();
+      const amount = parseFloat(document.getElementById('entryAmount').value);
+      const paymentMethod = document.getElementById('entryPayment').value;
+
+      if (!title || isNaN(amount) || amount <= 0) {
+        alert('অনুগ্রহ করে বিবরণ এবং সঠিক টাকার পরিমাণ লিখুন।');
+        return;
+      }
+
+      const newEntry = {
+        id: `offline_${Date.now()}`,
+        type: currentType,
+        title,
+        amount,
+        paymentMethod,
+        date: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString(),
+        offline: true,
+      };
+
+      try {
+        let queue = [];
+        const queueRaw = localStorage.getItem(queueKey);
+        if (queueRaw) queue = JSON.parse(queueRaw);
+        queue.push(newEntry);
+        localStorage.setItem(queueKey, JSON.stringify(queue));
+
+        // Clear form
+        document.getElementById('entryTitle').value = '';
+        document.getElementById('entryAmount').value = '';
+        loadLedger();
+        alert('✅ অফলাইনে সফলভাবে হিসাব সংরক্ষণ করা হয়েছে! ইন্টারনেট পাওয়া মাত্রই এটি সার্ভারে জমা হয়ে যাবে।');
+      } catch (e) {
+        alert('সংরক্ষণে সমস্যা হয়েছে: ' + e.message);
+      }
+    }
+
+    function retryOnline() {
+      if (navigator.onLine) {
+        window.location.href = 'https://amarsalon.xyz';
+      } else {
+        alert('⚠️ ইন্টারনেট সংযোগ এখনো পাওয়া যায়নি। অনুগ্রহ করে আপনার মোবাইল ডাটা বা ওয়াইফাই চালু করে আবার চেষ্টা করুন।');
+      }
+    }
+
+    window.addEventListener('online', () => {
+      window.location.href = 'https://amarsalon.xyz';
+    });
+
+    document.addEventListener('DOMContentLoaded', loadLedger);
+  </script>
+</body>
+</html>

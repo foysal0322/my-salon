@@ -3,9 +3,16 @@ package com.amarsalon.app;
 import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.core.app.ActivityCompat;
@@ -25,6 +32,56 @@ public class MainActivity extends BridgeActivity {
 
         // 3. Configure Hardware Back Navigation
         setupBackNavigation();
+
+        // 4. Configure Native WebView Settings for Offline Resiliency & Custom User Agent
+        configureOfflineAndWebView();
+    }
+
+    private void configureOfflineAndWebView() {
+        if (bridge != null && bridge.getWebView() != null) {
+            WebView webView = bridge.getWebView();
+            WebSettings settings = webView.getSettings();
+
+            // Enable local storage and database caches
+            settings.setDomStorageEnabled(true);
+            settings.setDatabaseEnabled(true);
+            settings.setAllowFileAccess(true);
+            settings.setAllowContentAccess(true);
+
+            // Append AmarSalonAndroid/1.0 User Agent flag so web knows it's native
+            String defaultUA = settings.getUserAgentString();
+            if (defaultUA != null && !defaultUA.contains("AmarSalonAndroid")) {
+                settings.setUserAgentString(defaultUA + " AmarSalonAndroid/1.0");
+            }
+
+            boolean isOnline = isNetworkAvailable();
+            if (!isOnline) {
+                settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+                String errorUrl = bridge.getErrorUrl();
+                if (errorUrl != null) {
+                    webView.post(() -> webView.loadUrl(errorUrl));
+                }
+            } else {
+                settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            }
+        }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Network net = cm.getActiveNetwork();
+            if (net == null) return false;
+            NetworkCapabilities nc = cm.getNetworkCapabilities(net);
+            return nc != null && (
+                    nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    nc.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
+        } else {
+            NetworkInfo ni = cm.getActiveNetworkInfo();
+            return ni != null && ni.isConnected();
+        }
     }
 
     private void createNotificationChannel() {

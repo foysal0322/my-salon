@@ -5,9 +5,9 @@ import { useApp } from "@/context/AppContext";
 import { Download, X } from "lucide-react";
 
 export default function InstallBanner() {
-  const { showInstallBanner, promptPwaInstall, dismissInstallBanner, t, lang } = useApp();
+  const { showInstallBanner, promptPwaInstall, dismissInstallBanner, t, lang, isNativeApp } = useApp();
 
-  if (!showInstallBanner) return null;
+  if (isNativeApp || !showInstallBanner) return null;
 
   return (
     <aside aria-label="PWA Installation" className="sticky top-0 z-50 bg-[#0F534F] text-white px-3 py-2 flex items-center justify-between shadow-md transition-all">

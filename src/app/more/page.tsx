@@ -33,6 +33,7 @@ export default function MorePage() {
     canInstallPwa,
     promptPwaInstall,
     isPwaInstalled,
+    isNativeApp,
   } = useApp();
 
   return (
@@ -194,8 +195,27 @@ export default function MorePage() {
             )}
           </div>
 
-          {/* Install PWA Banner (If supported and not yet installed) */}
-          {!isPwaInstalled && (
+            {/* Native App Status Card or PWA Install Option */ }
+          {isNativeApp ? (
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-teal-200 dark:border-teal-800/80 shadow-xs flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                    {lang === "bn" ? "অ্যান্ড্রয়েড অ্যাপ সংস্করণ ১.০" : "AmarSalon Android App v1.0"}
+                  </span>
+                  <span className="text-[11px] text-teal-600 dark:text-teal-400 font-semibold block">
+                    {lang === "bn" ? "অফিসিয়াল অ্যাপ ইনস্টল করা আছে" : "Official native app installed"}
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-200">
+                PROD
+              </span>
+            </div>
+          ) : !isPwaInstalled ? (
             <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -217,7 +237,7 @@ export default function MorePage() {
                 {lang === "bn" ? "ইনস্টল" : "Install"}
               </button>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Support Section */}
