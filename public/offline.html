@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="bn">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -17,6 +18,7 @@
       --income: #059669;
       --expense: #E11D48;
     }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -24,6 +26,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hind Siliguri", "Noto Sans Bengali", sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
+
     body {
       background-color: #0A3936;
       color: var(--text);
@@ -31,6 +34,7 @@
       justify-content: center;
       min-height: 100vh;
     }
+
     .app-container {
       width: 100%;
       max-width: 480px;
@@ -40,6 +44,7 @@
       flex-direction: column;
       box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     }
+
     /* Header */
     header {
       background: linear-gradient(135deg, #0F534F 0%, #0A3936 100%);
@@ -50,16 +55,19 @@
       z-index: 100;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
+
     .header-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
+
     .brand {
       display: flex;
       align-items: center;
       gap: 10px;
     }
+
     .brand-logo {
       width: 36px;
       height: 36px;
@@ -70,20 +78,24 @@
       justify-content: center;
       border: 1px solid rgba(255, 255, 255, 0.25);
     }
+
     .brand-logo svg {
       width: 22px;
       height: 22px;
       fill: #F59E0B;
     }
+
     .brand-title {
       font-size: 18px;
       font-weight: 800;
       letter-spacing: -0.3px;
     }
+
     .brand-sub {
       font-size: 11px;
       color: #99F6E4;
     }
+
     .offline-badge {
       display: inline-flex;
       align-items: center;
@@ -96,6 +108,7 @@
       font-size: 11px;
       font-weight: 700;
     }
+
     .pulse-dot {
       width: 7px;
       height: 7px;
@@ -103,10 +116,22 @@
       border-radius: 50%;
       animation: pulse 1.5s infinite;
     }
+
     @keyframes pulse {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.3); }
-      100% { opacity: 1; transform: scale(1); }
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(1.3);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     /* Content */
@@ -128,6 +153,7 @@
       gap: 10px;
       align-items: flex-start;
     }
+
     .offline-alert svg {
       width: 20px;
       height: 20px;
@@ -135,11 +161,13 @@
       flex-shrink: 0;
       margin-top: 2px;
     }
+
     .offline-alert-text {
       font-size: 12px;
       color: #92400E;
       line-height: 1.5;
     }
+
     .offline-alert-text strong {
       display: block;
       margin-bottom: 2px;
@@ -155,11 +183,13 @@
       align-items: center;
       justify-content: space-between;
     }
+
     .retry-card span {
       font-size: 12px;
       font-weight: 600;
       color: var(--text-muted);
     }
+
     .btn-retry {
       background: var(--primary);
       color: white;
@@ -174,6 +204,7 @@
       gap: 6px;
       transition: all 0.2s;
     }
+
     .btn-retry:active {
       transform: scale(0.96);
     }
@@ -187,16 +218,19 @@
       align-items: center;
       justify-content: space-between;
     }
+
     .ledger-section-title small {
       font-size: 11px;
       color: var(--text-muted);
       font-weight: 600;
     }
+
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
     }
+
     .summary-card {
       background: white;
       border: 1px solid var(--border);
@@ -204,19 +238,30 @@
       padding: 12px 10px;
       text-align: center;
     }
+
     .summary-label {
       font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
       margin-bottom: 4px;
     }
+
     .summary-val {
       font-size: 14px;
       font-weight: 800;
     }
-    .val-income { color: var(--income); }
-    .val-expense { color: var(--expense); }
-    .val-net { color: var(--primary); }
+
+    .val-income {
+      color: var(--income);
+    }
+
+    .val-expense {
+      color: var(--expense);
+    }
+
+    .val-net {
+      color: var(--primary);
+    }
 
     /* New Entry Form */
     .entry-form-card {
@@ -225,18 +270,21 @@
       border-radius: 14px;
       padding: 16px;
     }
+
     .form-title {
       font-size: 13px;
       font-weight: 700;
       margin-bottom: 12px;
       color: var(--text);
     }
+
     .type-selector {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
       margin-bottom: 12px;
     }
+
     .type-btn {
       padding: 9px;
       border-radius: 10px;
@@ -248,16 +296,19 @@
       text-align: center;
       transition: all 0.2s;
     }
+
     .type-btn.active-income {
       background: #ECFDF5;
       border-color: var(--income);
       color: var(--income);
     }
+
     .type-btn.active-expense {
       background: #FFF1F2;
       border-color: var(--expense);
       color: var(--expense);
     }
+
     .input-field {
       width: 100%;
       padding: 10px 12px;
@@ -267,9 +318,11 @@
       margin-bottom: 10px;
       outline: none;
     }
+
     .input-field:focus {
       border-color: var(--primary);
     }
+
     .btn-submit {
       width: 100%;
       padding: 12px;
@@ -281,12 +334,15 @@
       cursor: pointer;
       transition: all 0.2s;
     }
+
     .btn-income {
       background: var(--income);
     }
+
     .btn-expense {
       background: var(--expense);
     }
+
     .btn-submit:active {
       transform: scale(0.98);
     }
@@ -298,6 +354,7 @@
       border-radius: 14px;
       padding: 14px;
     }
+
     .entry-item {
       display: flex;
       align-items: center;
@@ -305,28 +362,34 @@
       padding: 10px 0;
       border-bottom: 1px solid #F1F5F9;
     }
+
     .entry-item:last-child {
       border-bottom: none;
       padding-bottom: 0;
     }
+
     .entry-left {
       display: flex;
       flex-direction: column;
       gap: 2px;
     }
+
     .entry-title {
       font-size: 13px;
       font-weight: 700;
       color: var(--text);
     }
+
     .entry-sub {
       font-size: 11px;
       color: var(--text-muted);
     }
+
     .entry-amount {
       font-size: 13px;
       font-weight: 800;
     }
+
     .offline-tag {
       font-size: 9px;
       background: #FEF3C7;
@@ -339,6 +402,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="app-container">
     <header>
@@ -346,8 +410,12 @@
         <div class="brand">
           <div class="brand-logo">
             <svg viewBox="0 0 24 24">
-              <path d="M7 3C5.34315 3 4 4.34315 4 6V18C4 19.6569 5.34315 21 7 21C8.65685 21 10 19.6569 10 18V6C10 4.34315 8.65685 3 7 3Z"></path>
-              <path d="M17 3C15.3431 3 14 4.34315 14 6V18C14 19.6569 15.3431 21 17 21C18.6569 21 20 19.6569 20 18V6C20 4.34315 18.6569 3 17 3Z"></path>
+              <path
+                d="M7 3C5.34315 3 4 4.34315 4 6V18C4 19.6569 5.34315 21 7 21C8.65685 21 10 19.6569 10 18V6C10 4.34315 8.65685 3 7 3Z">
+              </path>
+              <path
+                d="M17 3C15.3431 3 14 4.34315 14 6V18C14 19.6569 15.3431 21 17 21C18.6569 21 20 19.6569 20 18V6C20 4.34315 18.6569 3 17 3Z">
+              </path>
             </svg>
           </div>
           <div>
@@ -372,7 +440,8 @@
         </svg>
         <div class="offline-alert-text">
           <strong>আপনি বর্তমানে অফলাইনে আছেন</strong>
-          লাইভ সিরিয়াল নেওয়ার জন্য সক্রিয় ইন্টারনেট সংযোগ প্রয়োজন। তবে সেলুন মালিকরা এই পাতায় <b>হিসাব খাতা (আয়-ব্যয়)</b> নিরাপদে লিখতে পারবেন। ইন্টারনেট ফিরে এলে স্বয়ংক্রিয়ভাবে ক্লাউড সার্ভারে সিঙ্ক হয়ে যাবে।
+          লাইভ সিরিয়াল নেওয়ার জন্য সক্রিয় ইন্টারনেট সংযোগ প্রয়োজন। তবে সেলুন মালিকরা এই পাতায় <b>হিসাব খাতা
+            (আয়-ব্যয়)</b> নিরাপদে লিখতে পারবেন। ইন্টারনেট ফিরে এলে স্বয়ংক্রিয়ভাবে ক্লাউড সার্ভারে সিঙ্ক হয়ে যাবে।
         </div>
       </div>
 
@@ -414,10 +483,12 @@
       <div class="entry-form-card">
         <div class="form-title">নতুন আয় বা ব্যয় লিখুন</div>
         <div class="type-selector">
-          <button type="button" class="type-btn active-income" id="btnTypeIncome" onclick="setType('INCOME')">+ নতুন আয়</button>
+          <button type="button" class="type-btn active-income" id="btnTypeIncome" onclick="setType('INCOME')">+ নতুন
+            আয়</button>
           <button type="button" class="type-btn" id="btnTypeExpense" onclick="setType('EXPENSE')">- নতুন ব্যয়</button>
         </div>
-        <input type="text" id="entryTitle" class="input-field" placeholder="বিবরণ (যেমন: হেয়ারকাট, দোকান ভাড়া, কসমেটিক্স)" required>
+        <input type="text" id="entryTitle" class="input-field"
+          placeholder="বিবরণ (যেমন: হেয়ারকাট, দোকান ভাড়া, কসমেটিক্স)" required>
         <input type="number" id="entryAmount" class="input-field" placeholder="টাকার পরিমাণ (৳)" required>
         <select id="entryPayment" class="input-field">
           <option value="CASH">পদ্ধতি: নগদ (Cash)</option>
@@ -483,7 +554,7 @@
             entries = cached.entries;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       // Add queued entries
       try {
@@ -502,7 +573,7 @@
             badge.style.color = '#D97706';
           }
         }
-      } catch (e) {}
+      } catch (e) { }
 
       document.getElementById('incomeVal').innerText = `৳${income.toLocaleString('bn-BD')}`;
       document.getElementById('expenseVal').innerText = `৳${expense.toLocaleString('bn-BD')}`;
@@ -575,17 +646,18 @@
 
     function retryOnline() {
       if (navigator.onLine) {
-        window.location.href = 'https://amarsalon.xyz';
+        window.location.href = 'https://www.amarsalon.xyz';
       } else {
         alert('⚠️ ইন্টারনেট সংযোগ এখনো পাওয়া যায়নি। অনুগ্রহ করে আপনার মোবাইল ডাটা বা ওয়াইফাই চালু করে আবার চেষ্টা করুন।');
       }
     }
 
     window.addEventListener('online', () => {
-      window.location.href = 'https://amarsalon.xyz';
+      window.location.href = 'https://www.amarsalon.xyz';
     });
 
     document.addEventListener('DOMContentLoaded', loadLedger);
   </script>
 </body>
+
 </html>

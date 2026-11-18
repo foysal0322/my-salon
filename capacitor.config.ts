@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: "AmarSalon (আমার সেলুন)",
   webDir: "public",
   server: {
-    url: "https://amarsalon.xyz",
+    url: "https://www.amarsalon.xyz",
     androidScheme: "https",
     cleartext: false,
     errorPath: "offline.html",
