@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     "trycloudflare.com",
   ],
   experimental: {
+    agentUpgrade: "security",
     serverActions: {
       allowedOrigins: [
         "*.trycloudflare.com",
