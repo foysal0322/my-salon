@@ -196,6 +196,15 @@ export default function SalonProfilePage() {
       return;
     }
 
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setErrorMessage(
+        lang === "bn"
+          ? "⚠️ আপনি বর্তমানে অফলাইনে আছেন। লাইভ সিরিয়াল নেওয়ার জন্য সক্রিয় ইন্টারনেট সংযোগ প্রয়োজন। অনুগ্রহ করে আপনার মোবাইল ডাটা বা ওয়াইফাই চালু করে পুনরায় চেষ্টা করুন।"
+          : "⚠️ You are currently offline. An active internet connection is required to book a live queue token. Please check your network and try again."
+      );
+      return;
+    }
+
     setSubmitting(true);
 
     try {

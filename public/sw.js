@@ -5,6 +5,7 @@ const STATIC_ASSETS = [
   "/globals.css",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
+  "/owner/ledger",
 ];
 
 // Install Event
@@ -39,40 +40,39 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Never cache API routes, admin routes, or user financial/private state
+  // Never cache API routes or admin routes
   if (
     url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/admin") ||
-    url.pathname.startsWith("/owner/ledger")
+    url.pathname.startsWith("/admin")
   ) {
-    return;
-  }
+  return;
+}
 
-  // Handle safe static resources
-  if (
-    event.request.destination === "style" ||
-    event.request.destination === "script" ||
-    event.request.destination === "image" ||
-    event.request.destination === "font"
-  ) {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          fetch(event.request)
-            .then((networkResponse) => {
-              if (networkResponse && networkResponse.status === 200) {
-                caches.open(CACHE_NAME).then((cache) => {
-                  cache.put(event.request, networkResponse);
-                });
-              }
-            })
-            .catch(() => { });
-          return cachedResponse;
-        }
-        return fetch(event.request);
-      })
-    );
-  }
+// Handle safe static resources
+if (
+  event.request.destination === "style" ||
+  event.request.destination === "script" ||
+  event.request.destination === "image" ||
+  event.request.destination === "font"
+) {
+  event.respondWith(
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, networkResponse);
+              });
+            }
+          })
+          .catch(() => { });
+        return cachedResponse;
+      }
+      return fetch(event.request);
+    })
+  );
+}
 });
 
 // Push Notification Event

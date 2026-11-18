@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import GlobalNotificationToast from "@/components/GlobalNotificationToast";
 import InstallGuideModal from "@/components/InstallGuideModal";
+import OfflineNotice from "@/components/OfflineNotice";
 import { useApp } from "@/context/AppContext";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
   <div className="min-h-dvh bg-slate-200/50 dark:bg-slate-950 flex justify-center selection:bg-teal-500 selection:text-white transition-colors">
     <div className="w-full max-w-[480px] min-h-dvh bg-[#FAF9F6] dark:bg-slate-900 shadow-2xl relative flex flex-col border-x border-slate-200/80 dark:border-slate-800 pb-20 overflow-x-hidden text-slate-900 dark:text-slate-100 transition-colors">
+      <OfflineNotice />
       <GlobalNotificationToast />
       <InstallBanner />
       <Header />

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AmarSalon (আমার সেলুন)</string>
+    <string name="title_activity_main">AmarSalon (আমার সেলুন)</string>
+    <string name="package_name">com.amarsalon.app</string>
+    <string name="custom_url_scheme">com.amarsalon.app</string>
+</resources>

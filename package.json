@@ -11,12 +11,20 @@
     "lint": "eslint",
     "test": "node --test tests/platform.test.mjs",
     "db:push": "prisma db push",
-    "seed": "node --experimental-strip-types prisma/seed.ts"
+    "android:sync": "cap sync android",
+    "android:build": "node scripts/build-android.mjs",
+    "android:open": "cap open android"
   },
   "prisma": {
     "seed": "node --experimental-strip-types prisma/seed.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/cli": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "@prisma/client": "^6.4.1",
     "date-fns": "^4.4.0",
     "dotenv": "^18.0.10",
