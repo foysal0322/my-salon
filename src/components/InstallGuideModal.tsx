@@ -49,7 +49,7 @@ export default function InstallGuideModal({
             </div>
             <div>
               <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
-                {lang === "bn" ? "আমার সেলুন অ্যাপ ইনস্টল" : "Install AmarSalon App"}
+                {lang === "bn" ? "AmarSalon অ্যাপ ইনস্টল" : "Install AmarSalon App"}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 {lang === "bn" ? "অ্যান্ড্রয়েড ও আইফোন এর জন্য আলাদা ব্যবস্থা" : "Choose your device platform"}

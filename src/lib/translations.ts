@@ -3,7 +3,7 @@ export type Language = "bn" | "en";
 export const translations = {
   bn: {
     // Brand & App
-    appName: "আমার সেলুন",
+    appName: "AmarSalon",
     appNameEn: "AmarSalon",
     tagline: "স্মার্ট সেলুন বুকিং ও লাইভ সিরিয়াল প্ল্যাটফর্ম",
     installBanner: "AmarSalon অ্যাপ ফোনে ইনস্টল করুন",

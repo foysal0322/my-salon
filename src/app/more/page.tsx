@@ -318,11 +318,11 @@ export default function MorePage() {
   {/* Footer info */ }
   < div className = "text-center py-4 text-xs text-slate-400 dark:text-slate-400 space-y-1" >
           <p className="font-semibold text-slate-600 dark:text-slate-400">
-            {lang === "bn" ? "আমার সেলুন (AmarSalon) v2.5" : "AmarSalon Platform v2.5"}
+            {lang === "bn" ? "AmarSalon v2.5" : "AmarSalon Platform v2.5"}
           </p>
           <p className="text-[11px]">
             {lang === "bn"
-              ? "© ২০২৬ আমার সেলুন। সর্বস্বত্ব সংরক্ষিত।"
+              ? "© ২০২৬ AmarSalon। সর্বস্বত্ব সংরক্ষিত।"
               : "© 2026 AmarSalon. All rights reserved."}
           </p>
         </div >

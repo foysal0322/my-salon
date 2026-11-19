@@ -193,13 +193,13 @@ select option {
 
 /* Safe Area Inset Utilities for Mobile Notches & Navigation Bars */
 .safe-top-padding {
-  padding-top: max(0.625rem, env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 .safe-bottom-nav {
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .safe-shell-bottom {
-  padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
 }

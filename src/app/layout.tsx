@@ -18,7 +18,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "আমার সেলুন (AmarSalon) — স্মার্ট সেলুন বুকিং ও লাইভ সিরিয়াল",
+  title: "AmarSalon — স্মার্ট সেলুন বুকিং ও লাইভ সিরিয়াল",
   description:
     "বাংলাদেশের সেরা সেলুন ও বিউটি পার্লার খুঁজুন, রিয়েল-টাইম চেয়ারের অবস্থা দেখুন এবং ঘরে বসেই লাইভ সিরিয়াল নিন।",
   manifest: "/manifest.json",
@@ -36,12 +36,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "আমার সেলুন",
+    title: "AmarSalon",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0D9488",
+  themeColor: "#FFFFFF",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -72,8 +72,7 @@ export default function RootLayout({
               (function() {
                 try {
                   var savedTheme = localStorage.getItem('amarsalon_theme') || localStorage.getItem('amarsaloon_theme');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                  if (savedTheme === 'dark') {
                     document.documentElement.classList.add('dark');
                   } else {
                     document.documentElement.classList.remove('dark');

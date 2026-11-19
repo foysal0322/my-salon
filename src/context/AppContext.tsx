@@ -114,24 +114,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setLangState(savedLang);
       }
 
-      // Initialize Theme
+      // Initialize Theme (Default to day mode / light)
       const savedTheme = (localStorage.getItem("amarsalon_theme") || localStorage.getItem("amarsaloon_theme")) as "light" | "dark" | null;
-      if (savedTheme === "dark" || savedTheme === "light") {
-        setThemeState(savedTheme);
-        if (savedTheme === "dark") {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
+      if (savedTheme === "dark") {
+        setThemeState("dark");
+        document.documentElement.classList.add("dark");
       } else {
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        if (prefersDark) {
-          setThemeState("dark");
-          document.documentElement.classList.add("dark");
-        } else {
-          setThemeState("light");
-          document.documentElement.classList.remove("dark");
-        }
+        setThemeState("light");
+        document.documentElement.classList.remove("dark");
       }
 
       const savedUser = localStorage.getItem("amarsalon_user") || localStorage.getItem("amarsaloon_user");

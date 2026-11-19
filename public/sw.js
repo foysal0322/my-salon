@@ -105,7 +105,7 @@ return cachedResponse || fetchPromise;
 
 // Push Notification Event
 self.addEventListener("push", (event) => {
-  let data = { title: "আমার সেলুন", body: "আপনার সিরিয়ালের আপডেট এসেছে।" };
+  let data = { title: "AmarSalon", body: "আপনার সিরিয়ালের আপডেট এসেছে।" };
   if (event.data) {
     try {
       data = event.data.json();

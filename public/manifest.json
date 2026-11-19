@@ -1,12 +1,12 @@
 {
-  "name": "আমার সেলুন - AmarSalon",
+  "name": "AmarSalon",
   "short_name": "AmarSalon",
   "description": "স্মার্ট সেলুন ও বিউটি পার্লার বুকিং ও লাইভ সিরিয়াল অ্যাপ",
   "start_url": "/?source=pwa",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FAF9F6",
-  "theme_color": "#0D9488",
+  "theme_color": "#FFFFFF",
   "lang": "bn-BD",
   "icons": [
     {

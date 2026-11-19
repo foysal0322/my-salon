@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "com.amarsalon.app",
-  appName: "AmarSalon (আমার সেলুন)",
+  appName: "AmarSalon",
   webDir: "public",
   server: {
     url: "https://www.amarsalon.xyz",
@@ -24,8 +24,8 @@ const config: CapacitorConfig = {
       showSpinner: false,
     },
     StatusBar: {
-      style: "DARK",
-      backgroundColor: "#0F534F",
+      style: "LIGHT",
+      backgroundColor: "#FFFFFF",
     },
   },
 };

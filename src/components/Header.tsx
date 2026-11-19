@@ -53,7 +53,7 @@ export default function Header() {
   const activeSalon = ownerSalons.find((s) => s.id === activeSalonId) || ownerSalons[0];
 
   return (
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-4 py-2.5 sm:py-3 safe-top-padding transition-colors">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 px-3 sm:px-4 py-1.5 sm:py-2 safe-top-padding transition-colors">
         <div className="flex items-center justify-between gap-2 max-w-full">
           {/* Brand Logo */}
           <Link
