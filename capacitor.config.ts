@@ -8,7 +8,6 @@ const config: CapacitorConfig = {
     url: "https://www.amarsalon.xyz",
     androidScheme: "https",
     cleartext: false,
-    errorPath: "offline.html",
   },
   android: {
     allowMixedContent: true,

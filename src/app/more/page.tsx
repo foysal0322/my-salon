@@ -34,6 +34,7 @@ export default function MorePage() {
     promptPwaInstall,
     isPwaInstalled,
     isNativeApp,
+    setIsInstallModalOpen,
   } = useApp();
 
   return (
@@ -195,7 +196,7 @@ export default function MorePage() {
             )}
           </div>
 
-            {/* Native App Status Card or PWA Install Option */ }
+          {/* Native App Status Card or Dual Platform App Install */}
           {isNativeApp ? (
             <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-teal-200 dark:border-teal-800/80 shadow-xs flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -204,7 +205,7 @@ export default function MorePage() {
                 </div>
                 <div>
                   <span className="text-xs font-bold text-slate-900 dark:text-white block">
-                    {lang === "bn" ? "অ্যান্ড্রয়েড অ্যাপ সংস্করণ ১.০" : "AmarSalon Android App v1.0"}
+                    {lang === "bn" ? "অ্যান্ড্রয়েড অ্যাপ সংস্করণ ১.০.১" : "AmarSalon Android App v1.0.1"}
                   </span>
                   <span className="text-[11px] text-teal-600 dark:text-teal-400 font-semibold block">
                     {lang === "bn" ? "অফিসিয়াল অ্যাপ ইনস্টল করা আছে" : "Official native app installed"}
@@ -215,33 +216,33 @@ export default function MorePage() {
                 PROD
               </span>
             </div>
-          ) : !isPwaInstalled ? (
-            <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                  <Download className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white block">
-                    {lang === "bn" ? "অ্যাপ ইনস্টল করুন" : "Install App"}
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                    {lang === "bn" ? "হোমস্ক্রিন থেকে এক ক্লিকে বুকিং" : "One-click access from home screen"}
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={promptPwaInstall}
-                className="px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition cursor-pointer"
-              >
-                {lang === "bn" ? "ইনস্টল" : "Install"}
-              </button>
-            </div>
-          ) : null}
+          ): (
+              <div className = "p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 shadow-xs flex items-center justify-between">
+              <div className = "flex items-center gap-3">
+                <div className = "w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                  <Download className = "w-4 h-4" />
         </div>
+        <div>
+          <span className="text-xs font-bold text-slate-900 dark:text-white block">
+            {lang === "bn" ? "অ্যাপ ইনস্টল (Android ও iOS)" : "Install App (Android & iOS)"}
+          </span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+            {lang === "bn" ? "১-ক্লিকে APK বা সাফারি PWA" : "1-Click APK or Safari PWA"}
+          </span>
+        </div>
+      </div>
+      <button
+        onClick={() => setIsInstallModalOpen(true)}
+        className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition cursor-pointer"
+      >
+        {lang === "bn" ? "অপশন দেখুন" : "View"}
+      </button>
+    </div>
+          )}
+        </div >
 
-        {/* Support Section */}
-        <div className="space-y-1 pt-1">
+  {/* Support Section */ }
+  < div className = "space-y-1 pt-1" >
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 px-1 mb-2">
             {lang === "bn" ? "গ্রাহক সহায়তা" : "Customer Support"}
           </h3>
@@ -267,55 +268,55 @@ export default function MorePage() {
               {lang === "bn" ? "কল দিন" : "Call"}
             </a>
           </div>
-        </div>
+        </div >
 
-        {/* Simple Salon Owner Action Button (Bottom of page) */}
-        <div className="pt-2">
-          {user?.role === "OWNER" ? (
-            <Link
-              href="/owner/dashboard"
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition active:scale-[0.99] shadow-xs"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-xs">
-                  <Store className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold block">
-                    {lang === "bn" ? "সেলুন মালিকের ড্যাশবোর্ড" : "Salon Owner Dashboard"}
-                  </span>
-                  <span className="text-[11px] text-teal-600 dark:text-teal-400 block">
-                    {lang === "bn" ? "সিরিয়াল ও কিউ কন্ট্রোল প্যানেল" : "Live queue & serial controller"}
-                  </span>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-teal-700 dark:text-teal-300" />
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-xs transition active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 text-teal-700 dark:text-teal-300 flex items-center justify-center">
-                  <Store className="w-4 h-4" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-slate-900 dark:text-white block">
-                    {lang === "bn" ? "সেলুন মালিক লগইন / সাইন-আপ" : "Salon Owner Login / Sign Up"}
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
-                    {lang === "bn" ? "আপনার সেলুন যুক্ত বা পরিচালনা করুন" : "Register or manage your salon"}
-                  </span>
-                </div>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </Link>
-          )}
+  {/* Simple Salon Owner Action Button (Bottom of page) */ }
+  < div className = "pt-2" >
+    { user?.role === "OWNER" ? (
+    <Link
+      href="/owner/dashboard"
+      className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-200 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition active:scale-[0.99] shadow-xs"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-xs">
+          <Store className="w-4 h-4" />
         </div>
+        <div>
+          <span className="text-xs font-bold block">
+            {lang === "bn" ? "সেলুন মালিকের ড্যাশবোর্ড" : "Salon Owner Dashboard"}
+          </span>
+          <span className="text-[11px] text-teal-600 dark:text-teal-400 block">
+            {lang === "bn" ? "সিরিয়াল ও কিউ কন্ট্রোল প্যানেল" : "Live queue & serial controller"}
+          </span>
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4 text-teal-700 dark:text-teal-300" />
+    </Link>
+  ) : (
+    <Link
+      href="/login"
+      className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-xs transition active:scale-[0.99]"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-700 text-teal-700 dark:text-teal-300 flex items-center justify-center">
+          <Store className="w-4 h-4" />
+        </div>
+        <div>
+          <span className="text-xs font-bold text-slate-900 dark:text-white block">
+            {lang === "bn" ? "সেলুন মালিক লগইন / সাইন-আপ" : "Salon Owner Login / Sign Up"}
+          </span>
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
+            {lang === "bn" ? "আপনার সেলুন যুক্ত বা পরিচালনা করুন" : "Register or manage your salon"}
+          </span>
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4 text-slate-400" />
+    </Link>
+  )}
+        </div >
 
-        {/* Footer info */}
-        <div className="text-center py-4 text-xs text-slate-400 dark:text-slate-400 space-y-1">
+  {/* Footer info */ }
+  < div className = "text-center py-4 text-xs text-slate-400 dark:text-slate-400 space-y-1" >
           <p className="font-semibold text-slate-600 dark:text-slate-400">
             {lang === "bn" ? "আমার সেলুন (AmarSalon) v2.5" : "AmarSalon Platform v2.5"}
           </p>
@@ -324,8 +325,8 @@ export default function MorePage() {
               ? "© ২০২৬ আমার সেলুন। সর্বস্বত্ব সংরক্ষিত।"
               : "© 2026 AmarSalon. All rights reserved."}
           </p>
-        </div>
-      </div>
-    </AppShell>
+        </div >
+      </div >
+    </AppShell >
   );
 }

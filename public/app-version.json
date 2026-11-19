@@ -1,0 +1,9 @@
+{
+  "version": "1.0.1",
+  "versionCode": 2,
+  "fileSize": "4.91 MB",
+  "downloadUrl": "/AmarSalon.apk",
+  "releaseDate": "2026-11-19",
+  "changelogBn": "স্ট্যাটাস বার ও নেভ বার ওভারল্যাপ ফিক্স, অফলাইন সেলুন ও হিসাব খাতা ক্যাশিং।",
+  "changelogEn": "Fixed navigation/status bar overlap, offline salon list and ledger cache."
+}

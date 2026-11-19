@@ -109,581 +109,627 @@ export default function SalonProfilePage() {
   const fetchSalonDetails = async () => {
     try {
       const res = await fetch(`/api/v1/saloons/${slug}`);
-      const data = await res.json();
-      if (data.salon) {
-        setSalon(data.salon);
-        // Pre-select first service if nothing selected
-        if (selectedServices.length === 0 && data.salon.services.length > 0) {
-          setSelectedServices([data.salon.services[0].id]);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.salon) {
+              setSalon(data.salon);
+              try {
+                localStorage.setItem(`amarsalon_salon_cache_${slug}`, JSON.stringify(data.salon));
+              } catch (e) { }
+              // Pre-select first service if nothing selected
+              if (selectedServices.length === 0 && data.salon.services.length > 0) {
+                setSelectedServices([data.salon.services[0].id]);
+              }
+            }
+          } else {
+            throw new Error("Failed to load salon details");
+          }
+        } catch (e) {
+          console.warn("Using offline cached salon details fallback:", e);
+          try {
+            const cached = localStorage.getItem(`amarsalon_salon_cache_${slug}`);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (parsed && parsed.id) {
+                setSalon(parsed);
+                if (selectedServices.length === 0 && parsed.services?.length > 0) {
+                  setSelectedServices([parsed.services[0].id]);
+                }
+              }
+            }
+          } catch (err) { }
+        } finally {
+          setLoading(false);
         }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+      };
 
-  useEffect(() => {
-    fetchSalonDetails();
-    // Auto refresh live queue every 4 seconds for real-time queue synchronization
-    const interval = setInterval(fetchSalonDetails, 4000);
-    return () => clearInterval(interval);
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <AppShell>
-        <div className="p-4 space-y-4 animate-pulse">
-          <div className="h-48 bg-slate-200 rounded-2xl" />
-          <div className="h-6 bg-slate-200 rounded-md w-3/4" />
-          <div className="h-4 bg-slate-200 rounded-md w-1/2" />
-          <div className="h-32 bg-slate-200 rounded-2xl" />
-        </div>
-      </AppShell>
-    );
-  }
-
-  if (!salon) {
-    return (
-      <AppShell>
-        <div className="p-8 text-center">
-          <p className="text-slate-600 mb-4">{t.error}</p>
-          <Link href="/" className="text-sm font-semibold text-teal-600 hover:underline">
-            {t.back}
-          </Link>
-        </div>
-      </AppShell>
-    );
-  }
-
-  const isFav = favorites.includes(salon.id);
-
-  const toggleService = (id: string) => {
-    triggerHaptic(20);
-    if (selectedServices.includes(id)) {
-      if (selectedServices.length > 1) {
-        setSelectedServices(selectedServices.filter((sId) => sId !== id));
-      }
-    } else {
-      setSelectedServices([...selectedServices, id]);
-    }
-  };
-
-  const selectedServiceObjects = salon.services.filter((s) =>
-    selectedServices.includes(s.id)
-  );
-
-  const totalBill = selectedServiceObjects.reduce((sum, s) => sum + s.price, 0);
-  const totalDuration = selectedServiceObjects.reduce(
-    (sum, s) => sum + s.durationMins,
-    0
-  );
-
-
-  // Submit Queue Booking
-  const handleConfirmBooking = async (e?: React.FormEvent, cancelExisting = false) => {
-    if (e) e.preventDefault();
-    setErrorMessage("");
-    setExistingBookingData(null);
-
-    if (isOwner) {
-      setErrorMessage(
-        lang === "bn"
-          ? "সেলুন মালিক অ্যাকাউন্ট থেকে কাস্টমার সিরিয়াল বুকিং করা সম্ভব নয়।"
-          : "Salon owners cannot book queue serials."
-      );
-      return;
-    }
-
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setErrorMessage(
-        lang === "bn"
-          ? "⚠️ আপনি বর্তমানে অফলাইনে আছেন। লাইভ সিরিয়াল নেওয়ার জন্য সক্রিয় ইন্টারনেট সংযোগ প্রয়োজন। অনুগ্রহ করে আপনার মোবাইল ডাটা বা ওয়াইফাই চালু করে পুনরায় চেষ্টা করুন।"
-          : "⚠️ You are currently offline. An active internet connection is required to book a live queue token. Please check your network and try again."
-      );
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      const res = await fetch("/api/v1/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          saloonId: salon.id,
-          customerId: user?.id || null,
-          guestName: guestName || (lang === "bn" ? "সম্মানিত গ্রাহক" : "Valued Customer"),
-          guestPhone: guestPhone,
-          serviceIds: selectedServices,
-          bookingType: "LIVE_QUEUE",
-          cancelExisting,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.booking) {
-        playChime();
-        triggerHaptic(70);
-        setActiveBookingId(data.booking.id);
-        requestNotifications().catch(() => { });
-
+      useEffect(() => {
+        // Attempt instant load from local offline cache
         try {
-          localStorage.setItem("amarsalon_active_booking_id", data.booking.id);
-          localStorage.setItem("amarsalon_last_booking_id", data.booking.id);
-          localStorage.setItem("amarsalon_guest_phone", guestPhone);
-          if (guestName) localStorage.setItem("amarsalon_guest_name", guestName);
+          const cached = localStorage.getItem(`amarsalon_salon_cache_${slug}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.id) {
+              setSalon(parsed);
+              setLoading(false);
+              if (selectedServices.length === 0 && parsed.services?.length > 0) {
+                setSelectedServices([parsed.services[0].id]);
+              }
+            }
+          }
         } catch (e) { }
 
-        setCreatedBooking(data.booking);
-
-        // Auto-navigate after showing success state
-        setTimeout(() => {
-          setShowQueueModal(false);
-          router.push(`/bookings?active=${data.booking.id}`);
-        }, 1600);
-      } else {
-        if (data.existingBookingId) {
-          setExistingBookingData({
-            id: data.existingBookingId,
-            token: data.existingToken,
-            salonName: data.existingSalonName,
-          });
-        }
-        setErrorMessage(data.error || t.error);
-      }
-    } catch (e) {
-      setErrorMessage(t.error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <AppShell>
-      {/* Top Cover Hero */}
-      <div className="relative h-48 bg-slate-900 overflow-hidden">
-        <img
-          src={
-            salon.coverImage ||
-            "/images/salon-placeholder.svg"
+        fetchSalonDetails();
+        // Auto refresh live queue every 4 seconds when online
+        const interval = setInterval(() => {
+          if (typeof navigator === "undefined" || navigator.onLine) {
+            fetchSalonDetails();
           }
-          alt={salon.nameBn}
-          className="w-full h-full object-cover opacity-85"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = "/images/salon-placeholder.svg";
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-black/20" />
+        }, 4000);
+        return () => clearInterval(interval);
+      }, [slug]);
 
-        {/* Back and Favorite Floating Header */}
-        <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-          <Link
-            href="/"
-            className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Link>
+      if (loading) {
+        return (
+          <AppShell>
+            <div className="p-4 space-y-4 animate-pulse">
+              <div className="h-48 bg-slate-200 rounded-2xl" />
+              <div className="h-6 bg-slate-200 rounded-md w-3/4" />
+              <div className="h-4 bg-slate-200 rounded-md w-1/2" />
+              <div className="h-32 bg-slate-200 rounded-2xl" />
+            </div>
+          </AppShell>
+        );
+      }
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                triggerHaptic(30);
-                toggleFavorite(salon.id);
+      if (!salon) {
+        return (
+          <AppShell>
+            <div className="p-8 text-center">
+              <p className="text-slate-600 mb-4">{t.error}</p>
+              <Link href="/" className="text-sm font-semibold text-teal-600 hover:underline">
+                {t.back}
+              </Link>
+            </div>
+          </AppShell>
+        );
+      }
+
+      const isFav = favorites.includes(salon.id);
+
+      const toggleService = (id: string) => {
+        triggerHaptic(20);
+        if (selectedServices.includes(id)) {
+          if (selectedServices.length > 1) {
+            setSelectedServices(selectedServices.filter((sId) => sId !== id));
+          }
+        } else {
+          setSelectedServices([...selectedServices, id]);
+        }
+      };
+
+      const selectedServiceObjects = salon.services.filter((s) =>
+        selectedServices.includes(s.id)
+      );
+
+      const totalBill = selectedServiceObjects.reduce((sum, s) => sum + s.price, 0);
+      const totalDuration = selectedServiceObjects.reduce(
+        (sum, s) => sum + s.durationMins,
+        0
+      );
+
+
+      // Submit Queue Booking
+      const handleConfirmBooking = async (e?: React.FormEvent, cancelExisting = false) => {
+        if (e) e.preventDefault();
+        setErrorMessage("");
+        setExistingBookingData(null);
+
+        if (isOwner) {
+          setErrorMessage(
+            lang === "bn"
+              ? "সেলুন মালিক অ্যাকাউন্ট থেকে কাস্টমার সিরিয়াল বুকিং করা সম্ভব নয়।"
+              : "Salon owners cannot book queue serials."
+          );
+          return;
+        }
+
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          setErrorMessage(
+            lang === "bn"
+              ? "⚠️ আপনি বর্তমানে অফলাইনে আছেন। লাইভ সিরিয়াল নেওয়ার জন্য সক্রিয় ইন্টারনেট সংযোগ প্রয়োজন। অনুগ্রহ করে আপনার মোবাইল ডাটা বা ওয়াইফাই চালু করে পুনরায় চেষ্টা করুন।"
+              : "⚠️ You are currently offline. An active internet connection is required to book a live queue token. Please check your network and try again."
+          );
+          return;
+        }
+
+        setSubmitting(true);
+
+        try {
+          const res = await fetch("/api/v1/bookings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              saloonId: salon.id,
+              customerId: user?.id || null,
+              guestName: guestName || (lang === "bn" ? "সম্মানিত গ্রাহক" : "Valued Customer"),
+              guestPhone: guestPhone,
+              serviceIds: selectedServices,
+              bookingType: "LIVE_QUEUE",
+              cancelExisting,
+            }),
+          });
+
+          const data = await res.json();
+          if (res.ok && data.booking) {
+            playChime();
+            triggerHaptic(70);
+            setActiveBookingId(data.booking.id);
+            requestNotifications().catch(() => { });
+
+            try {
+              localStorage.setItem("amarsalon_active_booking_id", data.booking.id);
+              localStorage.setItem("amarsalon_last_booking_id", data.booking.id);
+              localStorage.setItem("amarsalon_guest_phone", guestPhone);
+              if (guestName) localStorage.setItem("amarsalon_guest_name", guestName);
+            } catch (e) { }
+
+            setCreatedBooking(data.booking);
+
+            // Auto-navigate after showing success state
+            setTimeout(() => {
+              setShowQueueModal(false);
+              router.push(`/bookings?active=${data.booking.id}`);
+            }, 1600);
+          } else {
+            if (data.existingBookingId) {
+              setExistingBookingData({
+                id: data.existingBookingId,
+                token: data.existingToken,
+                salonName: data.existingSalonName,
+              });
+            }
+            setErrorMessage(data.error || t.error);
+          }
+        } catch (e) {
+          setErrorMessage(t.error);
+        } finally {
+          setSubmitting(false);
+        }
+      };
+
+      return (
+        <AppShell>
+          {/* Top Cover Hero */}
+          <div className="relative h-48 bg-slate-900 overflow-hidden">
+            <img
+              src={
+                salon.coverImage ||
+                "/images/salon-placeholder.svg"
+              }
+              alt={salon.nameBn}
+              className="w-full h-full object-cover opacity-85"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "/images/salon-placeholder.svg";
               }}
-              className={`w-9 h-9 rounded-full backdrop-blur-md flex items-center justify-center transition cursor-pointer ${isFav
-                ? "bg-rose-500 text-white shadow-md shadow-rose-500/30"
-                : "bg-black/40 text-white hover:bg-black/60"
-                }`}
-              title="Save to My Saloons"
-            >
-              <Heart className={`w-5 h-5 ${isFav ? "fill-white" : ""}`} />
-            </button>
-          </div>
-        </div>
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-black/20" />
 
-        {/* Hero Title & Pill */}
-        <div className="absolute bottom-3 left-4 right-4 text-white">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            {salon.code && (
-              <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-slate-900/85 backdrop-blur-xs text-white border border-white/20">
-                ID: #{salon.code}
-              </span>
-            )}
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
-              {salon.category === "UNISEX" ? (lang === "bn" ? "কমন" : "COMMON") : salon.category}
-            </span>
-            {salon.isAc && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-800/80 backdrop-blur-xs text-teal-200 border border-teal-500/40 flex items-center gap-1">
-                <Wind className="w-2.5 h-2.5" />
-                AC
-              </span>
-            )}
-          </div>
-          <h1 className="text-xl font-bold leading-tight text-white drop-shadow-md">
-            {lang === "bn" ? salon.nameBn : salon.nameEn}
-          </h1>
-        </div>
-      </div>
-
-      {/* Address & Quick Contact Strip */}
-      <div className="bg-white dark:bg-slate-800/90 px-4 py-3 border-b border-slate-200/80 dark:border-slate-700 shadow-xs flex items-center justify-between gap-3 text-xs">
-        <div className="flex items-start gap-1.5 text-slate-600 dark:text-slate-300 min-w-0">
-          <MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
-          <span className="truncate">{salon.address}</span>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <a
-            href={`tel:${salon.phone}`}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 font-semibold border border-teal-200 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition"
-          >
-            <Phone className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-            <span>{salon.phone}</span>
-          </a>
-        </div>
-      </div>
-
-      {/* Live Queue & Serial Status Board */}
-      <section className="px-4 py-3">
-        <div className="bg-gradient-to-br from-teal-900 to-[#115E59] text-white rounded-3xl p-4 shadow-md relative overflow-hidden">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-teal-200">
-                {lang === "bn" ? "লাইভ সিরিয়াল ও কিউ অবস্থা" : "Live Queue & Serial Status"}
-              </h2>
-            </div>
-            <span className="text-[10px] text-teal-300 font-medium">
-              {lang === "bn" ? "লাইভ আপডেট হচ্ছে" : "Live Sync"}
-            </span>
-          </div>
-
-          {/* Metric Columns */}
-          <div className="grid grid-cols-3 gap-2 text-center py-2 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10">
-            {/* Total Waiting in Queue */}
-            <div className="p-2 border-r border-white/10">
-              <p className="text-[10px] text-teal-200 font-medium">
-                {lang === "bn" ? "সিরিয়ালে অপেক্ষমাণ" : "Waiting in Queue"}
-              </p>
-              <p className="text-lg font-bold text-white leading-none mt-0.5">
-                {salon.totalQueue}
-              </p>
-              <p className="text-[9px] text-emerald-300 font-medium mt-0.5">
-                {salon.totalQueue === 0
-                  ? lang === "bn" ? "সিরিয়াল নেই" : "No wait"
-                  : lang === "bn" ? "জন অপেক্ষায়" : "people"}
-              </p>
-            </div>
-
-            {/* Serving Token */}
-            <div className="p-2 border-r border-white/10">
-              <p className="text-[10px] text-teal-200 font-medium">{t.currentServing}</p>
-              <p className="text-lg font-bold text-amber-300 leading-none mt-0.5">
-                #{String(salon.currentServingToken || 0).padStart(3, "0")}
-              </p>
-              <p className="text-[9px] text-teal-300 font-medium mt-0.5">
-                {lang === "bn" ? "চলতি সিরিয়াল" : "In Service"}
-              </p>
-            </div>
-
-            {/* Estimated Wait */}
-            <div className="p-2">
-              <p className="text-[10px] text-teal-200 font-medium">{t.estWaitTime}</p>
-              <p className="text-lg font-bold text-white leading-none mt-0.5">
-                ~{salon.estWaitMins}
-              </p>
-              <p className="text-[9px] text-teal-300 font-medium mt-0.5">{t.minutes}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Services Menu Section */}
-      <section className="px-4 py-2 pb-24">
-        <div className="flex items-center justify-between mb-2.5">
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>{t.selectServices}</span>
-          </h2>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            {lang === "bn" ? "একাধিক নির্বাচন করুন" : "Multi-select"}
-          </span>
-        </div>
-
-        <div className="space-y-2">
-          {salon.services.map((service) => {
-            const isSelected = selectedServices.includes(service.id);
-            return (
-              <button
-                key={service.id}
-                type="button"
-                onClick={() => toggleService(service.id)}
-                className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected
-                  ? "bg-teal-50/90 dark:bg-teal-950/70 border-teal-500 shadow-xs ring-1 ring-teal-500/30"
-                  : "bg-white dark:bg-slate-800/90 border-slate-200/80 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-                  }`}
+            {/* Back and Favorite Floating Header */}
+            <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+              <Link
+                href="/"
+                className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center hover:bg-black/60 transition"
               >
-                <div className="flex items-start gap-3 min-w-0">
-                  <div
-                    className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isSelected
-                      ? "bg-teal-600 border-teal-600 text-white"
-                      : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700"
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    triggerHaptic(30);
+                    toggleFavorite(salon.id);
+                  }}
+                  className={`w-9 h-9 rounded-full backdrop-blur-md flex items-center justify-center transition cursor-pointer ${isFav
+                    ? "bg-rose-500 text-white shadow-md shadow-rose-500/30"
+                    : "bg-black/40 text-white hover:bg-black/60"
+                    }`}
+                  title="Save to My Saloons"
+                >
+                  <Heart className={`w-5 h-5 ${isFav ? "fill-white" : ""}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Hero Title & Pill */}
+            <div className="absolute bottom-3 left-4 right-4 text-white">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                {salon.code && (
+                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-slate-900/85 backdrop-blur-xs text-white border border-white/20">
+                    ID: #{salon.code}
+                  </span>
+                )}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 uppercase tracking-wider">
+                  {salon.category === "UNISEX" ? (lang === "bn" ? "কমন" : "COMMON") : salon.category}
+                </span>
+                {salon.isAc && (
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-800/80 backdrop-blur-xs text-teal-200 border border-teal-500/40 flex items-center gap-1">
+                    <Wind className="w-2.5 h-2.5" />
+                    AC
+                  </span>
+                )}
+              </div>
+              <h1 className="text-xl font-bold leading-tight text-white drop-shadow-md">
+                {lang === "bn" ? salon.nameBn : salon.nameEn}
+              </h1>
+            </div>
+          </div>
+
+          {/* Address & Quick Contact Strip */}
+          <div className="bg-white dark:bg-slate-800/90 px-4 py-3 border-b border-slate-200/80 dark:border-slate-700 shadow-xs flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-start gap-1.5 text-slate-600 dark:text-slate-300 min-w-0">
+              <MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
+              <span className="truncate">{salon.address}</span>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <a
+                href={`tel:${salon.phone}`}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-200 font-semibold border border-teal-200 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/60 transition"
+              >
+                <Phone className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                <span>{salon.phone}</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Live Queue & Serial Status Board */}
+          <section className="px-4 py-3">
+            <div className="bg-gradient-to-br from-teal-900 to-[#115E59] text-white rounded-3xl p-4 shadow-md relative overflow-hidden">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-teal-200">
+                    {lang === "bn" ? "লাইভ সিরিয়াল ও কিউ অবস্থা" : "Live Queue & Serial Status"}
+                  </h2>
+                </div>
+                <span className="text-[10px] text-teal-300 font-medium">
+                  {lang === "bn" ? "লাইভ আপডেট হচ্ছে" : "Live Sync"}
+                </span>
+              </div>
+
+              {/* Metric Columns */}
+              <div className="grid grid-cols-3 gap-2 text-center py-2 bg-white/10 rounded-2xl backdrop-blur-xs border border-white/10">
+                {/* Total Waiting in Queue */}
+                <div className="p-2 border-r border-white/10">
+                  <p className="text-[10px] text-teal-200 font-medium">
+                    {lang === "bn" ? "সিরিয়ালে অপেক্ষমাণ" : "Waiting in Queue"}
+                  </p>
+                  <p className="text-lg font-bold text-white leading-none mt-0.5">
+                    {salon.totalQueue}
+                  </p>
+                  <p className="text-[9px] text-emerald-300 font-medium mt-0.5">
+                    {salon.totalQueue === 0
+                      ? lang === "bn" ? "সিরিয়াল নেই" : "No wait"
+                      : lang === "bn" ? "জন অপেক্ষায়" : "people"}
+                  </p>
+                </div>
+
+                {/* Serving Token */}
+                <div className="p-2 border-r border-white/10">
+                  <p className="text-[10px] text-teal-200 font-medium">{t.currentServing}</p>
+                  <p className="text-lg font-bold text-amber-300 leading-none mt-0.5">
+                    #{String(salon.currentServingToken || 0).padStart(3, "0")}
+                  </p>
+                  <p className="text-[9px] text-teal-300 font-medium mt-0.5">
+                    {lang === "bn" ? "চলতি সিরিয়াল" : "In Service"}
+                  </p>
+                </div>
+
+                {/* Estimated Wait */}
+                <div className="p-2">
+                  <p className="text-[10px] text-teal-200 font-medium">{t.estWaitTime}</p>
+                  <p className="text-lg font-bold text-white leading-none mt-0.5">
+                    ~{salon.estWaitMins}
+                  </p>
+                  <p className="text-[9px] text-teal-300 font-medium mt-0.5">{t.minutes}</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Services Menu Section */}
+          <section className="px-4 py-2 pb-24">
+            <div className="flex items-center justify-between mb-2.5">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                <span>{t.selectServices}</span>
+              </h2>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                {lang === "bn" ? "একাধিক নির্বাচন করুন" : "Multi-select"}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {salon.services.map((service) => {
+                const isSelected = selectedServices.includes(service.id);
+                return (
+                  <button
+                    key={service.id}
+                    type="button"
+                    onClick={() => toggleService(service.id)}
+                    className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${isSelected
+                      ? "bg-teal-50/90 dark:bg-teal-950/70 border-teal-500 shadow-xs ring-1 ring-teal-500/30"
+                      : "bg-white dark:bg-slate-800/90 border-slate-200/80 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                       }`}
                   >
-                    {isSelected && <CheckCircle2 className="w-4 h-4" />}
-                  </div>
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${isSelected
+                          ? "bg-teal-600 border-teal-600 text-white"
+                          : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700"
+                          }`}
+                      >
+                        {isSelected && <CheckCircle2 className="w-4 h-4" />}
+                      </div>
 
-                  <div className="min-w-0">
-                    <p className={`text-sm font-bold truncate ${isSelected ? "text-teal-900 dark:text-teal-200" : "text-slate-800 dark:text-slate-100"}`}>
-                      {lang === "bn" ? service.nameBn : service.nameEn}
-                    </p>
-                    {service.details && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{service.details}</p>
-                    )}
-                    <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-400 mt-1">
-                      <Clock className="w-3 h-3 text-slate-400" />
-                      <span>
-                        ~{service.durationMins} {t.minutes}
-                      </span>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-slate-900 dark:text-white font-mono">
-                    ৳{service.price}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Sticky Bottom Booking Action Bar */}
-      <aside aria-label="Booking Action Bar" className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none no-print">
-        <div className="w-full max-w-[480px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-xl px-4 py-3 flex items-center justify-between gap-3 pointer-events-auto transition-colors">
-          <div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              {selectedServices.length} {lang === "bn" ? "টি সার্ভিস নির্বাচিত" : "services"}
-            </p>
-            <p className="text-base font-bold text-slate-900 dark:text-white font-mono flex items-center gap-1.5">
-              <span>৳{totalBill}</span>
-              <span className="text-xs font-normal text-slate-400 font-sans">
-                • ~{totalDuration} {t.minutes}
-              </span>
-            </p>
-          </div>
-
-          {isOwner ? (
-            isMySalon ? (
-              <Link
-                href="/owner/dashboard"
-                className="flex items-center gap-1.5 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white px-5 py-3 rounded-2xl shadow-md transition cursor-pointer"
-              >
-                <Store className="w-4 h-4" />
-                <span>{lang === "bn" ? "মালিক ড্যাশবোর্ড" : "Owner Dashboard"}</span>
-              </Link>
-            ) : (
-              <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 px-3.5 py-2.5 rounded-xl inline-block text-center">
-                {lang === "bn" ? "মালিক অ্যাকাউন্টে বুকিং প্রযোজ্য নয়" : "Owners cannot book serials"}
-              </span>
-            )
-          ) : (
-            <button
-              onClick={() => {
-                triggerHaptic(35);
-                setShowQueueModal(true);
-              }}
-              className="flex items-center gap-1.5 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-5 py-3 rounded-2xl shadow-md transition cursor-pointer"
-            >
-              <Ticket className="w-4 h-4" />
-              <span>{t.joinLiveQueue}</span>
-            </button>
-          )}
-        </div>
-      </aside>
-
-      {/* Slide-Up Bottom Drawer: Join Live Queue Confirmation */}
-      {showQueueModal && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div
-            className="fixed inset-0"
-            onClick={() => {
-              if (!submitting) setShowQueueModal(false);
-            }}
-          />
-          <div className="w-full max-w-[480px] bg-white dark:bg-slate-800 rounded-t-3xl p-5 shadow-2xl relative z-10 animate-in slide-in-from-bottom duration-250 max-h-[90vh] overflow-y-auto pb-8 border-t border-slate-200 dark:border-slate-700">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 flex items-center justify-center font-bold">
-                  <Ticket className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.joinLiveQueue}</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{salon.nameBn}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowQueueModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-lg font-bold cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* SUCCESS CELEBRATION CARD */}
-            {createdBooking ? (
-              <div className="py-6 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-md animate-bounce">
-                  <CheckCircle2 className="w-9 h-9" />
-                </div>
-                <div>
-                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wider">
-                    {lang === "bn" ? "সিরিয়াল নিশ্চিত হয়েছে!" : "Token Issued!"}
-                  </span>
-                  <p className="text-4xl font-black font-mono text-slate-900 mt-2">
-                    #{String(createdBooking.tokenNumber).padStart(3, "0")}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {lang === "bn"
-                      ? "আপনার সিরিয়াল সফলভাবে নেওয়া হয়েছে। লাইভ ট্র্যাকারে আপনাকে নিয়ে যাওয়া হচ্ছে..."
-                      : "Your queue token is confirmed. Redirecting to live tracker..."}
-                  </p>
-                </div>
-
-                <div className="pt-2">
-                  <Link
-                    href={`/bookings?active=${createdBooking.id}`}
-                    className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-bold text-sm bg-[#0D9488] hover:bg-[#115E59] text-white shadow-md transition"
-                  >
-                    <span>{lang === "bn" ? "লাইভ ট্র্যাকার দেখুন" : "View Live Tracker"}</span>
-                    <ChevronLeft className="w-4 h-4 rotate-180" />
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Conflict Resolution Banner if Active Booking Exists */}
-                {existingBookingData ? (
-                  <div className="my-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs space-y-2.5">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-700" />
-                      <div>
-                        <p className="font-bold">
-                          {lang === "bn"
-                            ? `আপনার ইতোমধ্যে একটি সক্রিয় সিরিয়াল রয়েছে!`
-                            : `You already have an active queue token!`}
+                      <div className="min-w-0">
+                        <p className={`text-sm font-bold truncate ${isSelected ? "text-teal-900 dark:text-teal-200" : "text-slate-800 dark:text-slate-100"}`}>
+                          {lang === "bn" ? service.nameBn : service.nameEn}
                         </p>
-                        <p className="text-[11px] text-amber-800 mt-0.5">
-                          {lang === "bn"
-                            ? `সেলুন: ${existingBookingData.salonName} (টোকেন #${existingBookingData.token})। আপনি কি করবেন?`
-                            : `Salon: ${existingBookingData.salonName} (Token #${existingBookingData.token})`}
-                        </p>
+                        {service.details && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{service.details}</p>
+                        )}
+                        <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-400 mt-1">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <span>
+                            ~{service.durationMins} {t.minutes}
+                          </span>
+                        </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <Link
-                        href={`/bookings?active=${existingBookingData.id}`}
-                        className="text-center py-2 px-3 rounded-xl font-bold bg-amber-500 text-slate-950 text-[11px] shadow-xs hover:bg-amber-600 transition"
-                      >
-                        {lang === "bn" ? `টোকেন #${existingBookingData.token} দেখুন` : `View Active Token`}
-                      </Link>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white font-mono">
+                        ৳{service.price}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-                      <button
-                        type="button"
-                        onClick={() => handleConfirmBooking(undefined, true)}
-                        disabled={submitting}
-                        className="py-2 px-3 rounded-xl font-bold bg-rose-600 text-white text-[11px] shadow-xs hover:bg-rose-700 transition cursor-pointer"
-                      >
-                        {lang === "bn" ? `পূর্বেরটি বাতিল করে নতুন নিন` : `Cancel & Book Here`}
-                      </button>
+          {/* Sticky Bottom Booking Action Bar */}
+          <aside aria-label="Booking Action Bar" className="fixed bottom-0 left-0 right-0 z-40 flex justify-center pointer-events-none no-print">
+            <div className="w-full max-w-[480px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-xl px-4 py-3 flex items-center justify-between gap-3 pointer-events-auto transition-colors">
+              <div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                  {selectedServices.length} {lang === "bn" ? "টি সার্ভিস নির্বাচিত" : "services"}
+                </p>
+                <p className="text-base font-bold text-slate-900 dark:text-white font-mono flex items-center gap-1.5">
+                  <span>৳{totalBill}</span>
+                  <span className="text-xs font-normal text-slate-400 font-sans">
+                    • ~{totalDuration} {t.minutes}
+                  </span>
+                </p>
+              </div>
+
+              {isOwner ? (
+                isMySalon ? (
+                  <Link
+                    href="/owner/dashboard"
+                    className="flex items-center gap-1.5 text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white px-5 py-3 rounded-2xl shadow-md transition cursor-pointer"
+                  >
+                    <Store className="w-4 h-4" />
+                    <span>{lang === "bn" ? "মালিক ড্যাশবোর্ড" : "Owner Dashboard"}</span>
+                  </Link>
+                ) : (
+                  <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 px-3.5 py-2.5 rounded-xl inline-block text-center">
+                    {lang === "bn" ? "মালিক অ্যাকাউন্টে বুকিং প্রযোজ্য নয়" : "Owners cannot book serials"}
+                  </span>
+                )
+              ) : (
+                <button
+                  onClick={() => {
+                    triggerHaptic(35);
+                    if (typeof navigator !== "undefined" && !navigator.onLine) {
+                      alert(
+                        lang === "bn"
+                          ? "⚠️ আপনি বর্তমানে অফলাইনে আছেন। লাইভ সিরিয়াল নেওয়ার জন্য সক্রিয় ইন্টারনেট সংযোগ প্রয়োজন। অনুগ্রহ করে আপনার মোবাইল ডাটা বা ওয়াইফাই চালু করে পুনরায় চেষ্টা করুন।"
+                          : "⚠️ You are currently offline. An active internet connection is required to book a live queue token. Please check your network and try again."
+                      );
+                      return;
+                    }
+                    setShowQueueModal(true);
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-bold bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 px-5 py-3 rounded-2xl shadow-md transition cursor-pointer"
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>{t.joinLiveQueue}</span>
+                </button>
+              )}
+            </div>
+          </aside>
+
+          {/* Slide-Up Bottom Drawer: Join Live Queue Confirmation */}
+          {showQueueModal && (
+            <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+              <div
+                className="fixed inset-0"
+                onClick={() => {
+                  if (!submitting) setShowQueueModal(false);
+                }}
+              />
+              <div className="w-full max-w-[480px] bg-white dark:bg-slate-800 rounded-t-3xl p-5 shadow-2xl relative z-10 animate-in slide-in-from-bottom duration-250 max-h-[90vh] overflow-y-auto pb-8 border-t border-slate-200 dark:border-slate-700">
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 flex items-center justify-center font-bold">
+                      <Ticket className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-slate-900 dark:text-white">{t.joinLiveQueue}</h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{salon.nameBn}</p>
                     </div>
                   </div>
-                ) : errorMessage ? (
-                  <div className="my-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
-                    <span>{errorMessage}</span>
-                  </div>
-                ) : null}
-
-                {/* Selected Summary */}
-                <div className="my-3 p-3 bg-slate-50 dark:bg-slate-700/60 rounded-2xl border border-slate-200/80 dark:border-slate-600 text-xs space-y-1">
-                  <div className="flex justify-between font-semibold text-slate-700 dark:text-slate-200">
-                    <span>{t.selectedServices}:</span>
-                    <span className="truncate max-w-[200px]">
-                      {selectedServiceObjects.map((s) => s.nameBn).join(", ")}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-slate-500 dark:text-slate-400 text-[11px]">
-                    <span>{lang === "bn" ? "আনুমানিক সময়:" : "Estimated time:"}</span>
-                    <span>~{totalDuration} {t.minutes}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-slate-900 dark:text-white text-sm pt-1.5 border-t border-slate-200/60 dark:border-slate-600">
-                    <span>{t.totalBill}:</span>
-                    <span className="text-teal-700 dark:text-teal-400 font-mono text-base">৳{totalBill}</span>
-                  </div>
+                  <button
+                    onClick={() => setShowQueueModal(false)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 text-lg font-bold cursor-pointer"
+                  >
+                    ✕
+                  </button>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={(e) => handleConfirmBooking(e, false)} className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {t.name}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="আপনার নাম লিখুন"
-                      className="w-full text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      {t.phone} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
-                      placeholder={t.phonePlaceholder}
-                      className="w-full text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3.5 py-2.5 font-mono focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
-                    />
-                    <p className="text-[10px] text-slate-400 dark:text-slate-400 mt-1">
-                      {t.guestNotice}
-                    </p>
-                  </div>
-
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-600 active:scale-98 text-slate-950 shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                    >
-                      <Ticket className="w-4 h-4" />
-                      <span>
-                        {submitting
-                          ? t.loading
-                          : lang === "bn"
-                            ? "সিরিয়াল নিশ্চিত করুন"
-                            : "Confirm Queue Token"}
+                {/* SUCCESS CELEBRATION CARD */}
+                {createdBooking ? (
+                  <div className="py-6 text-center space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-md animate-bounce">
+                      <CheckCircle2 className="w-9 h-9" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wider">
+                        {lang === "bn" ? "সিরিয়াল নিশ্চিত হয়েছে!" : "Token Issued!"}
                       </span>
-                    </button>
+                      <p className="text-4xl font-black font-mono text-slate-900 mt-2">
+                        #{String(createdBooking.tokenNumber).padStart(3, "0")}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {lang === "bn"
+                          ? "আপনার সিরিয়াল সফলভাবে নেওয়া হয়েছে। লাইভ ট্র্যাকারে আপনাকে নিয়ে যাওয়া হচ্ছে..."
+                          : "Your queue token is confirmed. Redirecting to live tracker..."}
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <Link
+                        href={`/bookings?active=${createdBooking.id}`}
+                        className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-bold text-sm bg-[#0D9488] hover:bg-[#115E59] text-white shadow-md transition"
+                      >
+                        <span>{lang === "bn" ? "লাইভ ট্র্যাকার দেখুন" : "View Live Tracker"}</span>
+                        <ChevronLeft className="w-4 h-4 rotate-180" />
+                      </Link>
+                    </div>
                   </div>
-                </form>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </AppShell>
-  );
-}
+                ) : (
+                  <>
+                    {/* Conflict Resolution Banner if Active Booking Exists */}
+                    {existingBookingData ? (
+                      <div className="my-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs space-y-2.5">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-700" />
+                          <div>
+                            <p className="font-bold">
+                              {lang === "bn"
+                                ? `আপনার ইতোমধ্যে একটি সক্রিয় সিরিয়াল রয়েছে!`
+                                : `You already have an active queue token!`}
+                            </p>
+                            <p className="text-[11px] text-amber-800 mt-0.5">
+                              {lang === "bn"
+                                ? `সেলুন: ${existingBookingData.salonName} (টোকেন #${existingBookingData.token})। আপনি কি করবেন?`
+                                : `Salon: ${existingBookingData.salonName} (Token #${existingBookingData.token})`}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <Link
+                            href={`/bookings?active=${existingBookingData.id}`}
+                            className="text-center py-2 px-3 rounded-xl font-bold bg-amber-500 text-slate-950 text-[11px] shadow-xs hover:bg-amber-600 transition"
+                          >
+                            {lang === "bn" ? `টোকেন #${existingBookingData.token} দেখুন` : `View Active Token`}
+                          </Link>
+
+                          <button
+                            type="button"
+                            onClick={() => handleConfirmBooking(undefined, true)}
+                            disabled={submitting}
+                            className="py-2 px-3 rounded-xl font-bold bg-rose-600 text-white text-[11px] shadow-xs hover:bg-rose-700 transition cursor-pointer"
+                          >
+                            {lang === "bn" ? `পূর্বেরটি বাতিল করে নতুন নিন` : `Cancel & Book Here`}
+                          </button>
+                        </div>
+                      </div>
+                    ) : errorMessage ? (
+                      <div className="my-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                        <span>{errorMessage}</span>
+                      </div>
+                    ) : null}
+
+                    {/* Selected Summary */}
+                    <div className="my-3 p-3 bg-slate-50 dark:bg-slate-700/60 rounded-2xl border border-slate-200/80 dark:border-slate-600 text-xs space-y-1">
+                      <div className="flex justify-between font-semibold text-slate-700 dark:text-slate-200">
+                        <span>{t.selectedServices}:</span>
+                        <span className="truncate max-w-[200px]">
+                          {selectedServiceObjects.map((s) => s.nameBn).join(", ")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400 text-[11px]">
+                        <span>{lang === "bn" ? "আনুমানিক সময়:" : "Estimated time:"}</span>
+                        <span>~{totalDuration} {t.minutes}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-slate-900 dark:text-white text-sm pt-1.5 border-t border-slate-200/60 dark:border-slate-600">
+                        <span>{t.totalBill}:</span>
+                        <span className="text-teal-700 dark:text-teal-400 font-mono text-base">৳{totalBill}</span>
+                      </div>
+                    </div>
+
+                    {/* Form */}
+                    <form onSubmit={(e) => handleConfirmBooking(e, false)} className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          {t.name}
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={guestName}
+                          onChange={(e) => setGuestName(e.target.value)}
+                          placeholder="আপনার নাম লিখুন"
+                          className="w-full text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3.5 py-2.5 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          {t.phone} <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          required
+                          value={guestPhone}
+                          onChange={(e) => setGuestPhone(e.target.value)}
+                          placeholder={t.phonePlaceholder}
+                          className="w-full text-sm bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-3.5 py-2.5 font-mono focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition"
+                        />
+                        <p className="text-[10px] text-slate-400 dark:text-slate-400 mt-1">
+                          {t.guestNotice}
+                        </p>
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="submit"
+                          disabled={submitting}
+                          className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-amber-500 hover:bg-amber-600 active:scale-98 text-slate-950 shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          <Ticket className="w-4 h-4" />
+                          <span>
+                            {submitting
+                              ? t.loading
+                              : lang === "bn"
+                                ? "সিরিয়াল নিশ্চিত করুন"
+                                : "Confirm Queue Token"}
+                          </span>
+                        </button>
+                      </div>
+                    </form>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </AppShell>
+      );
+    }

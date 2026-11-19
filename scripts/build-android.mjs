@@ -51,14 +51,17 @@ try {
     const sizeMb = (stats.size / (1024 * 1024)).toFixed(2);
 
     const rootApkPath = path.join(rootDir, "AmarSalon.apk");
+    const publicApkPath = path.join(rootDir, "public", "AmarSalon.apk");
     fs.copyFileSync(apkPath, rootApkPath);
+    fs.copyFileSync(apkPath, publicApkPath);
 
     console.log("\n==========================================");
     console.log("  🎉 APK Build Succeeded!");
     console.log("==========================================");
-    console.log(`📁 Root APK:     ${rootApkPath}`);
-    console.log(`📁 Gradle Build: ${apkPath}`);
-    console.log(`⚖️ APK File Size: ${sizeMb} MB (Ultra-Lightweight)`);
+    console.log(`📁 Root APK:       ${rootApkPath}`);
+    console.log(`📁 Web Public APK: ${publicApkPath}`);
+    console.log(`📁 Gradle Build:   ${apkPath}`);
+    console.log(`⚖️ APK File Size:   ${sizeMb} MB (Ultra-Lightweight)`);
     console.log("\n📱 To install directly to a connected Android phone:");
     console.log("   adb install -r android/app/build/outputs/apk/debug/app-debug.apk");
     console.log("\n✨ Or copy 'app-debug.apk' to your phone and tap to install!");

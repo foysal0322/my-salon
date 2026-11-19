@@ -1,4 +1,4 @@
-const CACHE_NAME = "amarsalon-v1";
+const CACHE_NAME = "amarsalon-v2";
 const STATIC_ASSETS = [
   "/",
   "/manifest.json",
@@ -6,21 +6,22 @@ const STATIC_ASSETS = [
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
   "/owner/ledger",
+  "/more",
 ];
 
-// Install Event
+// Install Event - Pre-cache critical application shell
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn("Pre-caching non-critical failure:", err);
+        console.warn("Pre-caching non-critical asset error:", err);
       });
     })
   );
   self.skipWaiting();
 });
 
-// Activate Event
+// Activate Event - Clean up old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -36,43 +37,70 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch Event - Network First with Safe Static Fallback
+// Fetch Event - Stale-While-Revalidate & Offline Navigation Fallback
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Never cache API routes or admin routes
+  // Skip API routes, admin routes, and download files
   if (
     url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/admin")
+    url.pathname.startsWith("/admin") ||
+      url.pathname.endsWith(".apk")
   ) {
-  return;
-}
+return;
+  }
 
-// Handle safe static resources
-if (
-  event.request.destination === "style" ||
-  event.request.destination === "script" ||
-  event.request.destination === "image" ||
-  event.request.destination === "font"
-) {
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        fetch(event.request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(event.request, networkResponse);
-              });
-            }
-          })
-          .catch(() => { });
-        return cachedResponse;
-      }
-      return fetch(event.request);
-    })
-  );
-}
+        // 1. Handle Navigation Requests (HTML Pages)
+        if (event.request.mode === "navigate") {
+          event.respondWith(
+            fetch(event.request)
+              .then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                  const clone = networkResponse.clone();
+                  caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(event.request, clone);
+                  });
+                }
+                return networkResponse;
+              })
+              .catch(async () => {
+                // If offline, attempt exact match, then try fallback to cached root shell
+                const cachedMatch = await caches.match(event.request);
+                if (cachedMatch) return cachedMatch;
+                const rootMatch = await caches.match("/");
+                if (rootMatch) return rootMatch;
+                return new Response("Offline", { status: 503, statusText: "Offline" });
+              })
+          );
+          return;
+        }
+
+        // 2. Handle Next.js static assets, styles, scripts, fonts, and images
+        if (
+          url.pathname.startsWith("/_next/static/") ||
+          event.request.destination === "style" ||
+          event.request.destination === "script" ||
+          event.request.destination === "image" ||
+          event.request.destination === "font"
+        ) {
+          event.respondWith(
+            caches.match(event.request).then((cachedResponse) => {
+              const fetchPromise = fetch(event.request)
+                .then((networkResponse) => {
+                  if (networkResponse && networkResponse.status === 200) {
+                    const clone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                      cache.put(event.request, clone);
+                    });
+                  }
+                  return networkResponse;
+                })
+          .catch (() => cachedResponse);
+
+return cachedResponse || fetchPromise;
+      })
+    );
+  }
 });
 
 // Push Notification Event
@@ -100,17 +128,18 @@ self.addEventListener("push", (event) => {
 // Notification Click Event
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || "/";
+  const targetUrl = (event.notification.data && event.notification.data.url) || "/";
+
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
-        if (client.url === urlToOpen && "focus" in client) {
-          return client.focus();
+          if (client.url.includes(targetUrl) && "focus" in client) {
+            return client.focus();
+          }
         }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
+        if (clients.openWindow) {
+          return clients.openWindow(targetUrl);
+        }
+      })
   );
 });

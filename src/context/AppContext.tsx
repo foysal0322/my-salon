@@ -28,6 +28,15 @@ export interface NotificationToast {
   type: "OWNER_NEW_BOOKING" | "USER_TURN_READY" | "INFO";
 }
 
+export interface AppUpdateInfo {
+  version: string;
+  versionCode: number;
+  downloadUrl: string;
+  fileSize: string;
+  changelogBn?: string;
+  changelogEn?: string;
+}
+
 interface AppContextType {
   lang: Language;
   setLang: (lang: Language) => void;
@@ -57,6 +66,8 @@ interface AppContextType {
   showNotificationToast: (toast: Omit<NotificationToast, "id">) => void;
   notificationsEnabled: boolean;
   requestNotifications: () => Promise<boolean>;
+  appUpdateAvailable: AppUpdateInfo | null;
+  dismissAppUpdate: () => void;
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
   toggleTheme: () => void;
@@ -74,6 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(true);
   const [isNativeApp, setIsNativeApp] = useState(false);
+  const [appUpdateAvailable, setAppUpdateAvailable] = useState<AppUpdateInfo | null>(null);
 
   // Notification state
   const [activeBookingId, setActiveBookingIdState] = useState<string | null>(null);
@@ -171,6 +183,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsPwaInstalled(true);
         setShowInstallBanner(false);
       }
+
+      // Query latest app release manifest to notify user if an APK update is available
+      fetch("/app-version.json")
+        .then((res) => res.json())
+        .then((manifest: AppUpdateInfo) => {
+          if (manifest && manifest.versionCode) {
+            const CURRENT_APP_VERSION_CODE = 1;
+            const installedCode = Number(
+              localStorage.getItem("amarsalon_installed_version_code") || CURRENT_APP_VERSION_CODE
+            );
+            if (manifest.versionCode > installedCode) {
+              setAppUpdateAvailable(manifest);
+            }
+          }
+        })
+        .catch(() => { });
 
       // Capture install prompt
       const handleBeforeInstall = (e: any) => {
@@ -599,6 +627,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         showNotificationToast,
         notificationsEnabled,
         requestNotifications,
+        appUpdateAvailable,
+        dismissAppUpdate: () => setAppUpdateAvailable(null),
         theme,
         setTheme,
         toggleTheme,

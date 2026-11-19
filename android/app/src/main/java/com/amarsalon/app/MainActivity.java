@@ -11,21 +11,19 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
-import android.webkit.WebResourceError;
-import android.webkit.WebResourceRequest;
+import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
-import com.getcapacitor.BridgeWebViewClient;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends BridgeActivity {
-    private static final String APP_URL = "https://www.amarsalon.xyz";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,25 +32,39 @@ public class MainActivity extends BridgeActivity {
 
         super.onCreate(savedInstanceState);
 
-        // 2. Setup High Priority Notification Channel
+        // 2. Prevent system UI overlap (Status Bar & Navigation Bar)
+        applySystemWindowInsets();
+
+        // 3. Setup High Priority Notification Channel
         createNotificationChannel();
 
-        // 3. Request Notification Permission on Android 13+
+        // 4. Request Notification Permission on Android 13+
         requestNotificationPermission();
 
-        // 4. Configure Hardware Back Navigation
+        // 5. Configure Hardware Back Navigation
         setupBackNavigation();
 
-        // 5. Configure Native WebView Settings & Bulletproof Offline Fallback
-        configureOfflineAndWebView();
+        // 6. Configure Native WebView Settings for Offline Resiliency & Custom User Agent
+        configureWebView();
     }
 
-    private void configureOfflineAndWebView() {
+    private void applySystemWindowInsets() {
+        View decorView = findViewById(android.R.id.content);
+        if (decorView != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(decorView, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                return insets;
+            });
+        }
+    }
+
+    private void configureWebView() {
         if (bridge == null || bridge.getWebView() == null) return;
         WebView webView = bridge.getWebView();
         WebSettings settings = webView.getSettings();
 
-        // Enable local storage and database caches
+        // Enable local storage, database, and cache for offline support
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(true);
@@ -65,52 +77,12 @@ public class MainActivity extends BridgeActivity {
             settings.setUserAgentString(defaultUA + " AmarSalonAndroid/1.0");
         }
 
-        // Override WebViewClient with custom offline interceptor
-        bridge.setWebViewClient(new BridgeWebViewClient(bridge) {
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request != null && request.isForMainFrame()) {
-                    // Suppress default net::ERR error page by NOT calling super.onReceivedError
-                    loadOfflineFallback(view);
-                    return;
-                }
-                super.onReceivedError(view, request, error);
-            }
-
-            @Override
-            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-                // Legacy API fallback
-                loadOfflineFallback(view);
-            }
-        });
-
-        // Check if device is offline on initial launch
+        // Cache mode: When offline, use local cache
         boolean isOnline = isNetworkAvailable();
         if (!isOnline) {
             settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-            loadOfflineFallback(webView);
         } else {
             settings.setCacheMode(WebSettings.LOAD_DEFAULT);
-        }
-    }
-
-    private void loadOfflineFallback(WebView view) {
-        try {
-            InputStream is = getAssets().open("public/offline.html");
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            String html = new String(buffer, StandardCharsets.UTF_8);
-            view.post(() -> {
-                // Load HTML directly into WebView with origin https://www.amarsalon.xyz
-                // This ensures all localStorage keys are 100% accessible offline
-                view.loadDataWithBaseURL(APP_URL, html, "text/html", "UTF-8", null);
-            });
-        } catch (Exception e) {
-            view.post(() -> {
-                view.loadUrl("file:///android_asset/public/offline.html");
-            });
         }
     }
 
